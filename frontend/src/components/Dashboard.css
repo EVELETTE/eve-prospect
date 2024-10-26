@@ -1,0 +1,252 @@
+/* src/components/Dashboard.css */
+
+.dashboard-container {
+    background-color: #f9f9fb;
+    min-height: 100vh;
+    font-family: Arial, sans-serif;
+}
+
+.dashboard-header {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    padding: 20px 30px;
+    background-color: #ffffff;
+    box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.header-actions {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+.subscribe-btn,
+.start-campaign-btn {
+    padding: 8px 20px;
+    font-size: 14px;
+    border-radius: 5px;
+    cursor: pointer;
+    border: none;
+    font-weight: bold;
+}
+
+.subscribe-btn {
+    color: #0073b1;
+    background-color: #e0f3ff;
+    transition: background-color 0.2s;
+}
+
+.subscribe-btn:hover {
+    background-color: #c0e0f7;
+}
+
+.start-campaign-btn {
+    color: #ffffff;
+    background-color: #0073b1;
+    transition: background-color 0.2s;
+}
+
+.start-campaign-btn:hover {
+    background-color: #005582;
+}
+
+.notification-icon {
+    position: relative;
+}
+
+.notification-count {
+    position: absolute;
+    top: -8px;
+    right: -8px;
+    background-color: red;
+    color: #ffffff;
+    font-size: 12px;
+    font-weight: bold;
+    border-radius: 50%;
+    padding: 2px 6px;
+}
+
+.bell-icon {
+    width: 24px;
+    height: 24px;
+    cursor: pointer;
+}
+
+.user-profile {
+    position: relative;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.user-avatar {
+    width: 35px;
+    height: 35px;
+    border-radius: 50%;
+}
+
+.user-name {
+    font-size: 14px;
+    font-weight: bold;
+    color: #333;
+}
+
+.dashboard-content {
+    display: flex;
+    justify-content: center;
+    padding: 40px;
+}
+
+.campaign-overview,
+.statistics {
+    background-color: #ffffff;
+    border-radius: 12px;
+    box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.1);
+    padding: 20px;
+    max-width: 600px;
+    width: 100%;
+    margin-bottom: 30px;
+    text-align: center;
+}
+
+.campaign-overview h3,
+.statistics h3 {
+    font-size: 18px;
+    color: #333;
+    margin-bottom: 10px;
+}
+
+.campaign-overview p {
+    font-size: 14px;
+    color: #777;
+    margin-bottom: 20px;
+}
+
+.dashboard-btn {
+    padding: 10px 20px;
+    font-size: 14px;
+    color: #ffffff;
+    background-color: #0073b1;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.dashboard-btn:hover {
+    background-color: #005582;
+}
+
+.statistics .stat-box {
+    display: flex;
+    justify-content: space-around;
+    margin-top: 20px;
+}
+
+.statistics .stat-box div {
+    text-align: center;
+    background-color: #f3f3f3;
+    padding: 15px;
+    border-radius: 8px;
+    width: 100px;
+}
+
+.statistics .stat-box h4 {
+    font-size: 14px;
+    color: #555;
+}
+
+.statistics .stat-box p {
+    font-size: 20px;
+    color: #0073b1;
+    font-weight: bold;
+}
+
+.red-button {
+    width: 100%;
+    padding: 10px;
+    margin-top: 10px;
+    font-size: 16px;
+    color: #fff;
+    background-color: #d9534f; /* Rouge */
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+.red-button:hover {
+    background-color: #c9302c; /* Rouge plus foncé au survol */
+}
+/* Dashboard.css */
+
+.user-profile {
+    position: relative;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+}
+
+.dropdown-menu {
+    position: absolute;
+    top: 50px;
+    right: 0;
+    background-color: white;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.1);
+    padding: 10px;
+    width: 200px;
+    display: flex;
+    flex-direction: column;
+    z-index: 1000;
+
+    /* Animation properties */
+    max-height: 0;
+    overflow: hidden;
+    opacity: 0;
+    transform: translateY(-10px);
+    transition: max-height 0.3s ease, opacity 0.3s ease, transform 0.3s ease;
+    pointer-events: none; /* Empêche les interactions quand le menu est caché */
+}
+
+.dropdown-menu.open {
+    max-height: 500px; /* Ajustez selon la hauteur du contenu */
+    opacity: 1;
+    transform: translateY(0);
+    pointer-events: auto;
+}
+
+.menu-item {
+    padding: 10px;
+    text-align: left;
+    cursor: pointer;
+    font-size: 14px;
+    color: #333;
+    transition: background-color 0.2s;
+    border: none;
+    background: none;
+    text-align: left;
+}
+
+.menu-item:hover {
+    background-color: #f0f0f0;
+}
+
+.red-button {
+    background-color: #e74c3c;
+    color: white;
+    padding: 10px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 14px;
+    text-align: center;
+    border: none;
+    margin-top: 10px;
+}
+
+.red-button:hover {
+    background-color: #c0392b;
+}

@@ -1,0 +1,116 @@
+/* src/components/Login.css */
+
+.login-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    background-color: #f3f2ef;
+}
+
+.login-box {
+    background: white;
+    padding: 20px;
+    width: 400px;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    text-align: center;
+}
+
+.login-box h2 {
+    margin-bottom: 10px;
+    font-size: 24px;
+}
+
+.login-box p {
+    margin-bottom: 20px;
+    color: #737373;
+    font-size: 14px;
+}
+
+.input-field {
+    margin-bottom: 20px;
+}
+
+.input-field input {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 16px;
+}
+
+.forgot-password {
+    text-align: right;
+    font-size: 12px;
+    color: #0073b1;
+    margin-bottom: 20px;
+}
+
+.login-btn {
+    width: 100%;
+    padding: 12px;
+    background-color: #0073b1;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    font-size: 16px;
+    cursor: pointer;
+    margin-bottom: 20px;
+}
+
+.login-btn:hover {
+    background-color: #005582;
+}
+
+.or-section {
+    margin: 20px 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.or-section span {
+    color: #737373;
+    font-size: 14px;
+    padding: 0 10px;
+}
+
+.or-section::before,
+.or-section::after {
+    content: '';
+    flex-grow: 1;
+    height: 1px;
+    background-color: #ddd;
+}
+
+.apple-login-btn {
+    width: 100%;
+    padding: 12px;
+    background-color: black;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    font-size: 16px;
+    cursor: pointer;
+    margin-bottom: 20px;
+}
+
+.join-now {
+    font-size: 14px;
+}
+
+.join-now a {
+    color: #0073b1;
+    text-decoration: none;
+}
+
+.join-now a:hover {
+    text-decoration: underline;
+}
+
+.confirmation-message {
+    color: green;
+    font-size: 14px;
+    margin-bottom: 15px;
+}
