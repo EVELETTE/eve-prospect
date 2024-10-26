@@ -13,7 +13,7 @@ const Dashboard = () => {
     const [lastName, setLastName] = useState('');
     const [showMenu, setShowMenu] = useState(false);
     const [showSettings, setShowSettings] = useState(false);
-   // const [isDarkTheme, setIsDarkTheme] = useState(true); // État du thème
+    const [isDarkTheme, setIsDarkTheme] = useState(true); // État du thème
     const menuRef = useRef(null);
 
     useEffect(() => {
@@ -24,7 +24,9 @@ const Dashboard = () => {
                         Authorization: `Bearer ${localStorage.getItem('token')}`
                     }
                 });
-                setAvatar(response.data.avatar || `https://avatars.dicebear.com/api/initials/${response.data.firstName}-${response.data.lastName}.svg`);
+                setAvatar(
+                    response.data.avatar || `https://ui-avatars.com/api/?name=${response.data.firstName}+${response.data.lastName}&background=random`
+                );
                 setFirstName(response.data.firstName);
                 setLastName(response.data.lastName);
             } catch (error) {
@@ -69,19 +71,19 @@ const Dashboard = () => {
     return (
         <div className="dashboard-container">
             <header className="dashboard-header">
-                <img src={isDarkTheme ? LogoDark : LogoLight} alt="Eve-Prospect Logo" className="dashboard-logo"/>
+                <img src={isDarkTheme ? LogoDark : LogoLight} alt="Eve-Prospect Logo" className="dashboard-logo" />
                 <div className="header-actions">
                     <button className="start-campaign-btn">Démarrer une campagne</button>
                     <div className="notification-icon">
                         <span className="notification-count">1</span>
-                        <img src={BellIcon} alt="Notifications" className="bell-icon"/>
+                        <img src={BellIcon} alt="Notifications" className="bell-icon" />
                     </div>
                     <div className="user-profile" onClick={toggleMenu} ref={menuRef}>
-                        <img src={avatar} alt="User Avatar" className="user-avatar"/>
+                        <img src={avatar} alt="User Avatar" className="header-user-avatar" />
                         <span className="user-name">{firstName} {lastName}</span>
                         <span className="dropdown-icon">▼</span>
                         <div className={`dropdown-menu ${showMenu ? 'open' : ''}`}>
-                            <div className="menu-divider"/>
+                            <div className="menu-divider" />
                             <button className="menu-item" onClick={handleShowSettings}>Paramètres</button>
                             <button className="menu-item">Rafraîchir l'extension</button>
                             <button className="red-button" onClick={handleLogout}>Déconnexion</button>

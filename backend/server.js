@@ -2,6 +2,7 @@ const express = require('express');
 const mongoose = require('mongoose');
 const dotenv = require('dotenv');
 const cors = require('cors');
+const path = require('path');
 
 // Charger les variables d'environnement
 dotenv.config();
@@ -21,12 +22,11 @@ const campaignRoutes = require('./routes/campaigns');
 
 // Utilisation des routes
 app.use('/api/auth', authRoutes);
-app.use('/api/campaigns', campaignRoutes); // Lien avec les routes de campagnes
-app.use('/uploads', express.static('uploads'));
+app.use('/api/campaigns', campaignRoutes);
+app.use('/uploads', express.static(path.join(__dirname, 'uploads'))); // Servir le dossier statique
 
-//log
+// Démarrer le serveur
 const PORT = process.env.PORT || 5001;
 app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
 });
-

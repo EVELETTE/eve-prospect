@@ -6,6 +6,7 @@
     align-items: center;
     background-color: #f9f9fb;
     padding: 40px;
+    min-height: 100vh;
 }
 
 .back-btn {
@@ -23,42 +24,45 @@
 .profile-content {
     background-color: #ffffff;
     padding: 30px;
-    border-radius: 10px;
+    border-radius: 12px;
     box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.1);
-    max-width: 400px;
+    max-width: 450px;
     width: 100%;
     text-align: center;
 }
 
 .profile-content h3 {
-    font-size: 22px;
+    font-size: 24px;
     color: #333;
-    margin-bottom: 20px;
+    margin-bottom: 25px;
 }
 
 .profile-section {
     display: flex;
     flex-direction: column;
     align-items: center;
+    margin-bottom: 25px;
 }
 
 .setting-user-avatar {
-    width: 100px;
-    height: 100px;
+    width: 120px;
+    height: 120px;
     border-radius: 50%;
     margin-bottom: 15px;
-    border: 2px solid #ddd;
+    border: 3px solid #ddd;
+    box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
 }
 
 .avatar-buttons {
     display: flex;
     gap: 10px;
+    margin-top: 10px;
 }
 
 .change-avatar-btn,
 .delete-avatar-btn {
     font-size: 14px;
-    padding: 8px 12px;
+    padding: 8px 16px;
     border-radius: 5px;
     cursor: pointer;
     border: none;
@@ -83,15 +87,15 @@
 }
 
 .user-details {
-    margin-top: 30px;
     display: flex;
     flex-direction: column;
-    gap: 15px;
+    gap: 20px;
 }
 
 .user-details div {
     display: flex;
     flex-direction: column;
+    text-align: left;
 }
 
 .user-details label {
@@ -100,11 +104,76 @@
     margin-bottom: 5px;
 }
 
+.user-details p, /* Remplace les inputs par des paragraphes */
+.user-details input {
+    font-size: 16px;
+    color: #333;
+    background-color: #f9f9fb;
+    border: none;
+    text-align: left;
+    padding: 5px;
+}
+
+.user-details p {
+    margin: 0;
+    border-bottom: 1px solid #ddd;
+}
+
 .user-details input {
     padding: 10px;
-    font-size: 14px;
     border: 1px solid #ddd;
     border-radius: 5px;
-    background-color: #f9f9fb;
-    color: #333;
+    display: none; /* Caché par défaut */
+}
+
+.edit-email-btn {
+    font-size: 12px;
+    color: #0073b1;
+    background: none;
+    border: none;
+    cursor: pointer;
+    text-decoration: underline;
+    margin-top: 5px;
+    align-self: flex-start;
+}
+
+.update-btn {
+    padding: 12px 20px;
+    font-size: 16px;
+    color: #ffffff;
+    background-color: #0073b1;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    margin-top: 30px;
+}
+
+.update-btn:hover {
+    background-color: #005582;
+}
+
+.confirmation-message {
+    font-size: 14px;
+    color: #4CAF50;
+    margin-top: 15px;
+}
+
+.edit-email-btn {
+    font-size: 12px;
+    color: #0073b1;
+    background: none;
+    border: none;
+    cursor: pointer;
+    text-decoration: underline;
+    margin-top: 5px;
+    align-self: flex-start;
+}
+
+.edit-email-btn:hover {
+    color: #005582;
+}
+.user-avatar{
+    width: 175px;
+    height: 175px;
+    border-radius: 50%;
 }
