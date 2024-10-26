@@ -12,14 +12,14 @@
     width: 100%;
     max-width: 400px;
     padding: 40px;
-    background-color: #ffffff;
+    background-color: black;
     border-radius: 8px;
     box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.1);
     text-align: center;
 }
 
 .register-box h2 {
-    color: #333;
+    color: white;
     margin-bottom: 10px;
     font-size: 24px;
 }
@@ -59,7 +59,7 @@
     padding: 12px;
     font-size: 16px;
     color: #ffffff;
-    background-color: #0073b1;
+    background-color: #B11B26;
     border: none;
     border-radius: 4px;
     cursor: pointer;
@@ -67,11 +67,15 @@
 }
 
 .register-btn:hover {
-    background-color: #005582;
+    background-color: darkred;
 }
 
 .login-link {
     margin-top: 20px;
     font-size: 14px;
     color: #666;
+}
+.register-logo {
+    width: 150px;
+    margin-bottom: 10px;
 }

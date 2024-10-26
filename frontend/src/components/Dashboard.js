@@ -4,6 +4,8 @@ import axios from 'axios';
 import './Dashboard.css';
 import BellIcon from '../assets/bell-icon.svg';
 import Settings from './Settings';
+import LogoLight from '../assets/logo-light.png';
+import LogoDark from '../assets/logo-dark.png';
 
 const Dashboard = () => {
     const [avatar, setAvatar] = useState('');
@@ -11,7 +13,8 @@ const Dashboard = () => {
     const [lastName, setLastName] = useState('');
     const [showMenu, setShowMenu] = useState(false);
     const [showSettings, setShowSettings] = useState(false);
-    const menuRef = useRef(null); // Référence pour le menu
+    const [isDarkTheme, setIsDarkTheme] = useState(true); // État du thème
+    const menuRef = useRef(null);
 
     useEffect(() => {
         const fetchUserData = async () => {
@@ -38,7 +41,7 @@ const Dashboard = () => {
 
     const handleClickOutside = (event) => {
         if (menuRef.current && !menuRef.current.contains(event.target)) {
-            setShowMenu(false); // Ferme le menu si clic à l'extérieur
+            setShowMenu(false);
         }
     };
 
@@ -66,18 +69,19 @@ const Dashboard = () => {
     return (
         <div className="dashboard-container">
             <header className="dashboard-header">
+                <img src={isDarkTheme ? LogoDark : LogoLight} alt="Eve-Prospect Logo" className="dashboard-logo"/>
                 <div className="header-actions">
                     <button className="start-campaign-btn">Démarrer une campagne</button>
                     <div className="notification-icon">
                         <span className="notification-count">1</span>
-                        <img src={BellIcon} alt="Notifications" className="bell-icon" />
+                        <img src={BellIcon} alt="Notifications" className="bell-icon"/>
                     </div>
                     <div className="user-profile" onClick={toggleMenu} ref={menuRef}>
-                        <img src={avatar} alt="User Avatar" className="user-avatar" />
+                        <img src={avatar} alt="User Avatar" className="user-avatar"/>
                         <span className="user-name">{firstName} {lastName}</span>
                         <span className="dropdown-icon">▼</span>
                         <div className={`dropdown-menu ${showMenu ? 'open' : ''}`}>
-                            <div className="menu-divider" />
+                            <div className="menu-divider"/>
                             <button className="menu-item" onClick={handleShowSettings}>Paramètres</button>
                             <button className="menu-item">Rafraîchir l'extension</button>
                             <button className="red-button" onClick={handleLogout}>Déconnexion</button>

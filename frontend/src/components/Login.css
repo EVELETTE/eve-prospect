@@ -9,9 +9,10 @@
 }
 
 .login-box {
-    background: white;
-    padding: 20px;
-    width: 400px;
+    background: black;
+    padding: 40px;
+    width: 100%;
+    max-width: 400px;
     border-radius: 8px;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
     text-align: center;
@@ -20,11 +21,12 @@
 .login-box h2 {
     margin-bottom: 10px;
     font-size: 24px;
+    color: white;
 }
 
 .login-box p {
     margin-bottom: 20px;
-    color: #737373;
+    color: grey;
     font-size: 14px;
 }
 
@@ -38,6 +40,8 @@
     border: 1px solid #ccc;
     border-radius: 4px;
     font-size: 16px;
+    box-sizing: border-box;
+    background: lightgrey;
 }
 
 .forgot-password {
@@ -50,17 +54,18 @@
 .login-btn {
     width: 100%;
     padding: 12px;
-    background-color: #0073b1;
+    background-color: #B11B26;
     color: white;
     border: none;
     border-radius: 4px;
     font-size: 16px;
     cursor: pointer;
     margin-bottom: 20px;
+    transition: background-color 0.3s ease;
 }
 
 .login-btn:hover {
-    background-color: #005582;
+    background-color: darkred;
 }
 
 .or-section {
@@ -94,6 +99,7 @@
     font-size: 16px;
     cursor: pointer;
     margin-bottom: 20px;
+    transition: background-color 0.3s ease;
 }
 
 .join-now {
@@ -113,4 +119,9 @@
     color: green;
     font-size: 14px;
     margin-bottom: 15px;
+}
+/* Ajoutez dans Login.css et Register.css */
+.login-logo, .register-logo {
+    width: 150px;
+    margin-bottom: 10px;
 }

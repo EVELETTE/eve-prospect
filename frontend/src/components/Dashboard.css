@@ -250,3 +250,7 @@
 .red-button:hover {
     background-color: #c0392b;
 }
+.dashboard-logo {
+    height: 50px; /* Ajustez la taille selon vos préférences */
+    margin-right: 20px;
+}

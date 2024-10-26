@@ -2,7 +2,8 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import './Register.css'; // Utilisez le CSS spécifique pour le style du formulaire d'inscription
+import './Register.css';
+import LogoLight from '../assets/logo-light.png'; // Importation du logo
 
 const Register = () => {
     const [prenom, setPrenom] = useState('');
@@ -37,6 +38,7 @@ const Register = () => {
     return (
         <div className="register-container">
             <div className="register-box">
+                <img src={LogoLight} alt="Eve-Prospect Logo" className="register-logo" /> {/* Logo ajouté */}
                 <h2>Inscription</h2>
                 <p>Rejoignez-nous</p>
                 {message && <p className="error-message">{message}</p>}
