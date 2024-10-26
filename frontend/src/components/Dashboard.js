@@ -13,7 +13,7 @@ const Dashboard = () => {
     const [lastName, setLastName] = useState('');
     const [showMenu, setShowMenu] = useState(false);
     const [showSettings, setShowSettings] = useState(false);
-    const [isDarkTheme, setIsDarkTheme] = useState(true); // État du thème
+   // const [isDarkTheme, setIsDarkTheme] = useState(true); // État du thème
     const menuRef = useRef(null);
 
     useEffect(() => {
