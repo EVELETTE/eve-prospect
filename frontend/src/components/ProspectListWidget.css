@@ -1,0 +1,76 @@
+/* src/components/ProspectListWidget.css */
+
+.prospect-list-widget {
+    background-color: #f9f9f9;
+    padding: 15px;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    margin-top: 20px;
+}
+
+.prospect-list-widget h4 {
+    font-size: 1.2em;
+    margin-bottom: 10px;
+}
+
+.prospect-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 8px 0;
+    border-bottom: 1px solid #ddd;
+}
+
+.prospect-info {
+    display: flex;
+    flex-direction: column;
+}
+
+.prospect-name {
+    font-weight: bold;
+}
+
+.prospect-company {
+    font-size: 0.9em;
+    color: #666;
+}
+
+.view-more-btn {
+    display: block;
+    margin: 10px auto;
+    padding: 8px 16px;
+    background-color: #007bff;
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+.import-button {
+    display: inline-block;
+    padding: 10px 15px;
+    background-color: #007bff;
+    color: white;
+    border-radius: 5px;
+    cursor: pointer;
+    margin-bottom: 15px;
+    text-align: center;
+}
+.import-button:hover {
+    background-color: #0056b3;
+}
+
+.prospect-list table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.prospect-list th,
+.prospect-list td {
+    border: 1px solid #ddd;
+    padding: 8px;
+    text-align: left;
+}
+
+.prospect-list th {
+    background-color: #f2f2f2;
+    font-weight: bold;
+}

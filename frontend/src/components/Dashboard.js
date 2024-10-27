@@ -6,6 +6,22 @@ import BellIcon from '../assets/bell-icon.svg';
 import Settings from './Settings';
 import LogoLight from '../assets/logo-light.png';
 import LogoDark from '../assets/logo-dark.png';
+import StatCard from './StatCard';
+import {
+    Chart as ChartJS,
+    LineElement,
+    PointElement,
+    LineController,
+    CategoryScale,
+    LinearScale,
+    Title,
+    Tooltip,
+    Legend
+} from 'chart.js';
+import { Line } from 'react-chartjs-2';
+
+// Enregistrer les composants nécessaires pour Chart.js
+ChartJS.register(LineElement, PointElement, LineController, CategoryScale, LinearScale, Title, Tooltip, Legend);
 
 const Dashboard = () => {
     const [avatar, setAvatar] = useState('');
@@ -13,7 +29,8 @@ const Dashboard = () => {
     const [lastName, setLastName] = useState('');
     const [showMenu, setShowMenu] = useState(false);
     const [showSettings, setShowSettings] = useState(false);
-    const [isDarkTheme, setIsDarkTheme] = useState(true); // État du thème
+    const [isDarkTheme, setIsDarkTheme] = useState(true);
+    const [selectedStat, setSelectedStat] = useState("Réponses à un message");
     const menuRef = useRef(null);
 
     useEffect(() => {
@@ -68,6 +85,29 @@ const Dashboard = () => {
         window.location.href = '/login';
     };
 
+
+    // Exemples de données de progression pour chaque statistique
+    const statData = {
+        "Réponses à un message": [5, 10, 15, 20, 25, 30, 35],
+        "Invitations envoyées": [150, 200, 250, 300, 350, 400, 450],
+        "Messages envoyés": [50, 75, 100, 125, 150, 175, 200],
+        "Connexions réalisées": [10, 20, 30, 40, 50, 60, 70]
+    };
+
+    const chartData = {
+        labels: ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"],
+        datasets: [
+            {
+                label: `Progression pour ${selectedStat}`,
+                data: statData[selectedStat] || [],
+                borderColor: '#4a90e2',
+                backgroundColor: '#4a90e233',
+                fill: true,
+                tension: 0.3
+            }
+        ]
+    };
+
     return (
         <div className="dashboard-container">
             <header className="dashboard-header">
@@ -96,31 +136,44 @@ const Dashboard = () => {
                 {showSettings ? (
                     <Settings onBack={handleShowDashboard} />
                 ) : (
-                    <div>
-                        <section className="campaign-overview">
-                            <h3>Your Campaigns</h3>
-                            <p>Manage your LinkedIn campaigns easily.</p>
-                            <button className="dashboard-btn">Create a New Campaign</button>
-                        </section>
+                    <section className="statistics">
+                        <h3>Statistiques</h3>
+                        <div className="stat-box">
+                            <StatCard
+                                icon={BellIcon}
+                                value={0}
+                                label="Réponses à un message"
+                                color="#4a90e2"
+                                onClick={() => setSelectedStat("Réponses à un message")}
+                            />
+                            <StatCard
+                                icon={BellIcon}
+                                value={150}
+                                label="Invitations envoyées"
+                                color="#28a745"
+                                onClick={() => setSelectedStat("Invitations envoyées")}
+                            />
+                            <StatCard
+                                icon={BellIcon}
+                                value={75}
+                                label="Messages envoyés"
+                                color="#17a2b8"
+                                onClick={() => setSelectedStat("Messages envoyés")}
+                            />
+                            <StatCard
+                                icon={BellIcon}
+                                value={35}
+                                label="Connexions réalisées"
+                                color="#ffc107"
+                                onClick={() => setSelectedStat("Connexions réalisées")}
+                            />
+                        </div>
 
-                        <section className="statistics">
-                            <h3>Statistics</h3>
-                            <div className="stat-box">
-                                <div>
-                                    <h4>Invitations Sent</h4>
-                                    <p>150</p>
-                                </div>
-                                <div>
-                                    <h4>Messages Sent</h4>
-                                    <p>75</p>
-                                </div>
-                                <div>
-                                    <h4>Connections Made</h4>
-                                    <p>35</p>
-                                </div>
-                            </div>
-                        </section>
-                    </div>
+                        <div className="stat-chart">
+                            <h4>{`Progression pour ${selectedStat}`}</h4>
+                            <Line data={chartData} />
+                        </div>
+                    </section>
                 )}
             </div>
         </div>
