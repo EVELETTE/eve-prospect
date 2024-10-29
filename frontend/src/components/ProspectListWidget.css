@@ -1,76 +1,73 @@
-/* src/components/ProspectListWidget.css */
-
 .prospect-list-widget {
-    background-color: #f9f9f9;
-    padding: 15px;
+    padding: 20px;
+    border: 1px solid #ddd;
     border-radius: 8px;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-    margin-top: 20px;
+    background-color: #fff;
+    max-width: 100%;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* Ajout d'une ombre */
 }
 
-.prospect-list-widget h4 {
-    font-size: 1.2em;
+.prospect-list-widget h3 {
+    font-size: 1.5em;
+    margin-bottom: 15px;
+    color: #333;
+}
+
+.import-btn, .save-list-btn {
+    display: inline-block;
+    padding: 8px 16px;
+    border: none;
+    background-color: #4a90e2;
+    color: #fff;
+    border-radius: 4px;
+    cursor: pointer;
+    margin-top: 10px;
     margin-bottom: 10px;
 }
 
-.prospect-item {
-    display: flex;
-    justify-content: space-between;
-    padding: 8px 0;
-    border-bottom: 1px solid #ddd;
+.import-btn:hover, .save-list-btn:hover {
+    background-color: #357ab8;
 }
 
-.prospect-info {
-    display: flex;
-    flex-direction: column;
-}
-
-.prospect-name {
-    font-weight: bold;
-}
-
-.prospect-company {
-    font-size: 0.9em;
-    color: #666;
-}
-
-.view-more-btn {
-    display: block;
-    margin: 10px auto;
-    padding: 8px 16px;
-    background-color: #007bff;
-    color: #fff;
-    border: none;
+.input-list-name, .search-bar {
+    width: 100%;
+    padding: 8px;
+    margin-top: 10px;
+    border: 1px solid #ddd;
     border-radius: 4px;
-    cursor: pointer;
-}
-.import-button {
-    display: inline-block;
-    padding: 10px 15px;
-    background-color: #007bff;
-    color: white;
-    border-radius: 5px;
-    cursor: pointer;
     margin-bottom: 15px;
-    text-align: center;
-}
-.import-button:hover {
-    background-color: #0056b3;
 }
 
-.prospect-list table {
+.prospect-table-container {
+    max-height: 300px;
+    overflow-y: auto;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    margin-top: 10px;
+    background-color: #fafafa;
+}
+
+.prospect-table {
     width: 100%;
     border-collapse: collapse;
+    margin-top: 5px;
 }
 
-.prospect-list th,
-.prospect-list td {
+.prospect-table th, .prospect-table td {
+    padding: 10px;
     border: 1px solid #ddd;
-    padding: 8px;
     text-align: left;
+    font-size: 0.9em;
 }
 
-.prospect-list th {
-    background-color: #f2f2f2;
+.prospect-table th {
+    background-color: #f0f0f0;
     font-weight: bold;
+}
+
+.no-prospects-message {
+    padding: 20px;
+    text-align: center;
+    font-style: italic;
+    color: #888;
 }

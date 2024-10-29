@@ -1,25 +1,25 @@
-// backend/middleware/authenticate.js
 const jwt = require('jsonwebtoken');
 
 const authenticate = (req, res, next) => {
     try {
-        // Vérifier la présence de l'en-tête d'autorisation
-        const token = req.headers.authorization && req.headers.authorization.split(' ')[1];
+        const authHeader = req.headers.authorization;
+        const token = authHeader && authHeader.split(' ')[1];
 
         if (!token) {
             return res.status(401).json({ message: 'Accès refusé. Aucun token fourni.' });
         }
 
-        // Décoder le token et vérifier le JWT
-        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
+            if (err) {
+                return res.status(401).json({ message: 'Token invalide ou expiré' });
+            }
 
-        // Assigner l'ID utilisateur extrait du token à `req.userId`
-        req.userId = decoded.id;
-
-        next(); // Passer au middleware ou à la route suivante
+            req.userId = decoded.id;
+            next();
+        });
     } catch (error) {
         console.error('Erreur d\'authentification:', error);
-        res.status(401).json({ message: 'Token invalide ou expiré' });
+        res.status(500).json({ message: 'Erreur serveur lors de l\'authentification.' });
     }
 };
 

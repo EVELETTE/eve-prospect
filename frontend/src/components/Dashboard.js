@@ -1,4 +1,3 @@
-// src/components/Dashboard.js
 import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import './Dashboard.css';
@@ -7,6 +6,7 @@ import Settings from './Settings';
 import LogoLight from '../assets/logo-light.png';
 import LogoDark from '../assets/logo-dark.png';
 import StatCard from './StatCard';
+import ProspectListWidget from './ProspectListWidget';
 import {
     Chart as ChartJS,
     LineElement,
@@ -85,7 +85,6 @@ const Dashboard = () => {
         window.location.href = '/login';
     };
 
-
     // Exemples de données de progression pour chaque statistique
     const statData = {
         "Réponses à un message": [5, 10, 15, 20, 25, 30, 35],
@@ -136,44 +135,52 @@ const Dashboard = () => {
                 {showSettings ? (
                     <Settings onBack={handleShowDashboard} />
                 ) : (
-                    <section className="statistics">
-                        <h3>Statistiques</h3>
-                        <div className="stat-box">
-                            <StatCard
-                                icon={BellIcon}
-                                value={0}
-                                label="Réponses à un message"
-                                color="#4a90e2"
-                                onClick={() => setSelectedStat("Réponses à un message")}
-                            />
-                            <StatCard
-                                icon={BellIcon}
-                                value={150}
-                                label="Invitations envoyées"
-                                color="#28a745"
-                                onClick={() => setSelectedStat("Invitations envoyées")}
-                            />
-                            <StatCard
-                                icon={BellIcon}
-                                value={75}
-                                label="Messages envoyés"
-                                color="#17a2b8"
-                                onClick={() => setSelectedStat("Messages envoyés")}
-                            />
-                            <StatCard
-                                icon={BellIcon}
-                                value={35}
-                                label="Connexions réalisées"
-                                color="#ffc107"
-                                onClick={() => setSelectedStat("Connexions réalisées")}
-                            />
-                        </div>
+                    <>
+                        <section className="statistics">
+                            <h3>Statistiques</h3>
+                            <div className="stat-box">
+                                <StatCard
+                                    icon={BellIcon}
+                                    value={0}
+                                    label="Réponses à un message"
+                                    color="#4a90e2"
+                                    onClick={() => setSelectedStat("Réponses à un message")}
+                                />
+                                <StatCard
+                                    icon={BellIcon}
+                                    value={150}
+                                    label="Invitations envoyées"
+                                    color="#28a745"
+                                    onClick={() => setSelectedStat("Invitations envoyées")}
+                                />
+                                <StatCard
+                                    icon={BellIcon}
+                                    value={75}
+                                    label="Messages envoyés"
+                                    color="#17a2b8"
+                                    onClick={() => setSelectedStat("Messages envoyés")}
+                                />
+                                <StatCard
+                                    icon={BellIcon}
+                                    value={35}
+                                    label="Connexions réalisées"
+                                    color="#ffc107"
+                                    onClick={() => setSelectedStat("Connexions réalisées")}
+                                />
+                            </div>
 
-                        <div className="stat-chart">
-                            <h4>{`Progression pour ${selectedStat}`}</h4>
-                            <Line data={chartData} />
-                        </div>
-                    </section>
+                            <div className="stat-chart">
+                                <h4>{`Progression pour ${selectedStat}`}</h4>
+                                <Line data={chartData}/>
+                            </div>
+                        </section>
+
+                        {/* Widget pour l'import et la gestion des listes de prospects */}
+                        <section className="prospect-list-widget">
+                            <h3>Gestion des Prospects</h3>
+                            <ProspectListWidget/>
+                        </section>
+                    </>
                 )}
             </div>
         </div>
