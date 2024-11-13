@@ -1,8 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import './Dashboard.css';
-import BellIcon from '../assets/bell-icon.svg';
-import Settings from './Settings';
+import Settings from './Settings'
 import LogoLight from '../assets/logo-light.png';
 import LogoDark from '../assets/logo-dark.png';
 import StatCard from './StatCard';
@@ -20,165 +19,216 @@ import {
 } from 'chart.js';
 import { Line } from 'react-chartjs-2';
 
-// Enregistrer les composants nécessaires pour Chart.js
 ChartJS.register(LineElement, PointElement, LineController, CategoryScale, LinearScale, Title, Tooltip, Legend);
 
+// 🔔 Icône de notification personnalisée
+const NotificationIcon = () => (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M12 22C13.1 22 14 21.1 14 20H10C10 21.1 10.9 22 12 22ZM18 16V11C18 7.93 16.37 5.36 13.5 4.68V4C13.5 3.17 12.83 2.5 12 2.5C11.17 2.5 10.5 3.17 10.5 4V4.68C7.64 5.36 6 7.92 6 11V16L4 18V19H20V18L18 16ZM16 17H8V11C8 8.52 9.51 6.5 12 6.5C14.49 6.5 16 8.52 16 11V17Z" fill="currentColor"/>
+    </svg>
+);
+
 const Dashboard = () => {
-    const [avatar, setAvatar] = useState('');
-    const [firstName, setFirstName] = useState('');
-    const [lastName, setLastName] = useState('');
+    // États
+    const [userData, setUserData] = useState({
+        firstName: '',
+        lastName: '',
+        email: '',
+        avatar: ''
+    });
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
     const [showMenu, setShowMenu] = useState(false);
     const [showSettings, setShowSettings] = useState(false);
     const [isDarkTheme, setIsDarkTheme] = useState(true);
-    const [selectedStat, setSelectedStat] = useState("Réponses à un message");
+    const [selectedStat, setSelectedStat] = useState("Prospects ajoutés");
+    const [prospects, setProspects] = useState([]);
     const menuRef = useRef(null);
 
+    // Chargement initial des données
     useEffect(() => {
-        const fetchUserData = async () => {
-            try {
-                const response = await axios.get('http://localhost:5001/api/auth/user', {
-                    headers: {
-                        Authorization: `Bearer ${localStorage.getItem('token')}`
-                    }
-                });
-                setAvatar(
-                    response.data.avatar || `https://ui-avatars.com/api/?name=${response.data.firstName}+${response.data.lastName}&background=random`
-                );
-                setFirstName(response.data.firstName);
-                setLastName(response.data.lastName);
-            } catch (error) {
-                console.error("Error fetching user data:", error);
+        fetchUserData();
+        fetchProspects();
+    }, []);
+
+    // Gestion du clic en dehors du menu
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (menuRef.current && !menuRef.current.contains(event.target)) {
+                setShowMenu(false);
             }
         };
 
-        fetchUserData();
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
 
-    const toggleMenu = () => {
-        setShowMenu(!showMenu);
-    };
+    // Récupération des données utilisateur
+    const fetchUserData = async () => {
+        try {
+            const token = localStorage.getItem('token');
+            if (!token) {
+                window.location.href = '/login';
+                return;
+            }
 
-    const handleClickOutside = (event) => {
-        if (menuRef.current && !menuRef.current.contains(event.target)) {
-            setShowMenu(false);
+            const response = await axios.get('http://localhost:5001/api/auth/user', {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+
+            if (response.data.valid && response.data.user) {
+                const { firstName, lastName } = response.data.user;
+                setUserData({
+                    ...response.data.user,
+                    avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(firstName)}+${encodeURIComponent(lastName)}&background=0D8ABC&color=fff&size=128`
+                });
+            }
+        } catch (error) {
+            console.error("❌ Erreur chargement données utilisateur:", error);
+            if (error.response?.status === 401) {
+                localStorage.removeItem('token');
+                window.location.href = '/login';
+            }
         }
     };
 
-    useEffect(() => {
-        document.addEventListener("mousedown", handleClickOutside);
-        return () => {
-            document.removeEventListener("mousedown", handleClickOutside);
-        };
-    }, []);
+    // Récupération des prospects
+    const fetchProspects = async () => {
+        try {
+            const response = await axios.get('http://localhost:5001/api/prospects', {
+                headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+            });
 
+            if (response.data.success) {
+                setProspects(response.data.prospects);
+            }
+        } catch (error) {
+            console.error("❌ Erreur chargement prospects:", error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // Handlers
+    const toggleMenu = () => setShowMenu(!showMenu);
     const handleShowSettings = () => {
         setShowSettings(true);
         setShowMenu(false);
     };
-
-    const handleShowDashboard = () => {
-        setShowSettings(false);
-    };
-
     const handleLogout = () => {
         localStorage.removeItem('token');
         window.location.href = '/login';
     };
-
-    // Exemples de données de progression pour chaque statistique
-    const statData = {
-        "Réponses à un message": [5, 10, 15, 20, 25, 30, 35],
-        "Invitations envoyées": [150, 200, 250, 300, 350, 400, 450],
-        "Messages envoyés": [50, 75, 100, 125, 150, 175, 200],
-        "Connexions réalisées": [10, 20, 30, 40, 50, 60, 70]
+    const handleRefreshData = async () => {
+        setLoading(true);
+        await Promise.all([fetchUserData(), fetchProspects()]);
+        setLoading(false);
     };
 
+    // Configuration du graphique
     const chartData = {
         labels: ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"],
-        datasets: [
-            {
-                label: `Progression pour ${selectedStat}`,
-                data: statData[selectedStat] || [],
-                borderColor: '#4a90e2',
-                backgroundColor: '#4a90e233',
-                fill: true,
-                tension: 0.3
-            }
-        ]
+        datasets: [{
+            label: selectedStat,
+            data: prospects.length ? Array(7).fill(prospects.length) : Array(7).fill(0),
+            borderColor: '#0077B5',
+            backgroundColor: 'rgba(0, 119, 181, 0.1)',
+            fill: true,
+            tension: 0.4
+        }]
     };
+
+    if (loading) return <div className="loading">🔄 Chargement...</div>;
+    if (error) return <div className="error">❌ {error}</div>;
 
     return (
         <div className="dashboard-container">
             <header className="dashboard-header">
-                <img src={isDarkTheme ? LogoDark : LogoLight} alt="Eve-Prospect Logo" className="dashboard-logo" />
+                <img src={isDarkTheme ? LogoDark : LogoLight} alt="Logo" className="dashboard-logo" />
                 <div className="header-actions">
-                    <button className="start-campaign-btn">Démarrer une campagne</button>
+                    <button className="start-campaign-btn">
+                        Démarrer une campagne
+                    </button>
                     <div className="notification-icon">
-                        <span className="notification-count">1</span>
-                        <img src={BellIcon} alt="Notifications" className="bell-icon" />
+                        <span className="notification-count">{prospects.length}</span>
+                        <NotificationIcon />
                     </div>
                     <div className="user-profile" onClick={toggleMenu} ref={menuRef}>
-                        <img src={avatar} alt="User Avatar" className="header-user-avatar" />
-                        <span className="user-name">{firstName} {lastName}</span>
+                        <img
+                            src={userData.avatar}
+                            alt="Avatar"
+                            className="header-user-avatar"
+                            onError={(e) => {
+                                e.target.src = `https://ui-avatars.com/api/?name=${userData.firstName}+${userData.lastName}&background=random`;
+                            }}
+                        />
+                        <span className="user-name">
+                            {userData.firstName} {userData.lastName}
+                        </span>
                         <span className="dropdown-icon">▼</span>
-                        <div className={`dropdown-menu ${showMenu ? 'open' : ''}`}>
-                            <div className="menu-divider" />
-                            <button className="menu-item" onClick={handleShowSettings}>Paramètres</button>
-                            <button className="menu-item">Rafraîchir l'extension</button>
-                            <button className="red-button" onClick={handleLogout}>Déconnexion</button>
-                        </div>
+                        {showMenu && (
+                            <div className="dropdown-menu">
+                                <button className="menu-item" onClick={handleShowSettings}>
+                                    ⚙️ Paramètres
+                                </button>
+                                <button className="menu-item" onClick={handleRefreshData}>
+                                    🔄 Rafraîchir
+                                </button>
+                                <button className="menu-item logout" onClick={handleLogout}>
+                                    🚪 Déconnexion
+                                </button>
+                            </div>
+                        )}
                     </div>
                 </div>
             </header>
 
             <div className="dashboard-content">
                 {showSettings ? (
-                    <Settings onBack={handleShowDashboard} />
+                    <Settings onBack={() => setShowSettings(false)} userData={userData} />
                 ) : (
                     <>
                         <section className="statistics">
-                            <h3>Statistiques</h3>
+                            <h3>📊 Statistiques</h3>
                             <div className="stat-box">
                                 <StatCard
-                                    icon={BellIcon}
-                                    value={0}
-                                    label="Réponses à un message"
-                                    color="#4a90e2"
-                                    onClick={() => setSelectedStat("Réponses à un message")}
+                                    icon="👥"
+                                    value={prospects.length}
+                                    label="Prospects ajoutés"
+                                    color="#0077B5"
                                 />
                                 <StatCard
-                                    icon={BellIcon}
-                                    value={150}
+                                    icon="📨"
+                                    value={Math.round(prospects.length * 1.5)}
                                     label="Invitations envoyées"
-                                    color="#28a745"
-                                    onClick={() => setSelectedStat("Invitations envoyées")}
+                                    color="#00A0DC"
                                 />
                                 <StatCard
-                                    icon={BellIcon}
-                                    value={75}
+                                    icon="✉️"
+                                    value={Math.round(prospects.length * 0.8)}
                                     label="Messages envoyés"
-                                    color="#17a2b8"
-                                    onClick={() => setSelectedStat("Messages envoyés")}
+                                    color="#0066FF"
                                 />
                                 <StatCard
-                                    icon={BellIcon}
-                                    value={35}
+                                    icon="🤝"
+                                    value={Math.round(prospects.length * 0.6)}
                                     label="Connexions réalisées"
-                                    color="#ffc107"
-                                    onClick={() => setSelectedStat("Connexions réalisées")}
+                                    color="#0A66C2"
                                 />
                             </div>
 
                             <div className="stat-chart">
-                                <h4>{`Progression pour ${selectedStat}`}</h4>
-                                <Line data={chartData}/>
+                                <Line data={chartData} />
                             </div>
                         </section>
 
-                        {/* Widget pour l'import et la gestion des listes de prospects */}
-                        <section className="prospect-list-widget">
-                            <h3>Gestion des Prospects</h3>
-                            <ProspectListWidget/>
+                        <section className="prospects-section">
+                            <h3>👥 Gestion des Prospects</h3>
+                            <ProspectListWidget
+                                prospects={prospects}
+                                onProspectsUpdate={setProspects}
+                                onRefresh={handleRefreshData}
+                            />
                         </section>
                     </>
                 )}

@@ -4,13 +4,12 @@
     background-color: #fff;
     border-radius: 10px;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-    padding: 20px;
+    padding: 10px;
     text-align: center;
     width: 160px; /* Assurez-vous que la largeur de chaque carte est fixée */
     transition: transform 0.2s ease, box-shadow 0.2s ease;
     cursor: pointer;
     margin: 10px;
-    border: 1px solid #ddd;
     display: flex;
     flex-direction: column;
     justify-content: center;

@@ -1,137 +1,164 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import CSVReader from 'react-csv-reader';
 import axios from 'axios';
 import './ProspectListWidget.css';
 
-const ProspectListWidget = () => {
-    const [prospects, setProspects] = useState([]);
+const ProspectListWidget = ({ prospects, onProspectsUpdate }) => {
+    const [selectedProspects, setSelectedProspects] = useState([]);
+    const [showImportSection, setShowImportSection] = useState(false);
     const [listName, setListName] = useState('');
     const [error, setError] = useState('');
-    const [isImportMode, setIsImportMode] = useState(false);
-    const [searchTerm, setSearchTerm] = useState('');
+    const [loading, setLoading] = useState(false);
 
-    // Charger les prospects depuis le backend
-    const fetchProspects = async () => {
+    const handleFileUpload = async (data) => {
         try {
+            setLoading(true);
+            const token = localStorage.getItem('token');
+
+            const formattedProspects = data.map(row => ({
+                prenom: row[0] || 'Non disponible',
+                nom: row[1] || 'Non disponible',
+                email: row[2] || 'Non disponible',
+                societe: row[3] || 'Non disponible',
+                linkedin: row[4] || 'Non disponible'
+            }));
+
+            for (const prospect of formattedProspects) {
+                await axios.post('http://localhost:5001/api/prospects/add', prospect, {
+                    headers: {
+                        Authorization: `Bearer ${token}`
+                    }
+                });
+            }
+
+            // Rafraîchir la liste des prospects
             const response = await axios.get('http://localhost:5001/api/prospects', {
-                headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+                headers: {
+                    Authorization: `Bearer ${token}`
+                }
             });
-            setProspects(response.data);
+
+            if (response.data.success) {
+                onProspectsUpdate(response.data.prospects);
+                setError('');
+                setShowImportSection(false);
+            }
         } catch (error) {
-            console.error('Erreur lors de la récupération des prospects:', error);
+            console.error("Erreur lors de l'import des prospects:", error);
+            setError("Erreur lors de l'import des prospects");
+        } finally {
+            setLoading(false);
         }
     };
 
-    useEffect(() => {
-        fetchProspects();
-    }, []);
-
-    const handleFileUpload = (data) => {
-        const cleanedData = data.map((prospect) => ({
-            nom: prospect[0],
-            prenom: prospect[1],
-            email: prospect[2],
-            societe: prospect[3],
-            linkedin: prospect[4]
-        }));
-        setProspects(cleanedData);
-    };
-
-    const handleSaveList = async () => {
-        if (!listName) {
-            setError('Nom de la liste est obligatoire.');
-            return;
-        }
-
+    const handleDeleteSelected = async () => {
         try {
-            const response = await axios.post('http://localhost:5001/api/prospects/add', {
-                listName,
-                prospects
-            }, {
-                headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+            setLoading(true);
+            const token = localStorage.getItem('token');
+
+            for (const id of selectedProspects) {
+                await axios.delete(`http://localhost:5001/api/prospects/${id}`, {
+                    headers: {
+                        Authorization: `Bearer ${token}`
+                    }
+                });
+            }
+
+            // Rafraîchir la liste des prospects
+            const response = await axios.get('http://localhost:5001/api/prospects', {
+                headers: {
+                    Authorization: `Bearer ${token}`
+                }
             });
-            setError('');
-            alert(response.data.message);
-            setListName('');
-            setProspects([]);
-            fetchProspects();
-            setIsImportMode(false);
+
+            if (response.data.success) {
+                onProspectsUpdate(response.data.prospects);
+                setSelectedProspects([]);
+                setError('');
+            }
         } catch (error) {
-            console.error('Erreur lors de l\'enregistrement de la liste:', error);
-            setError('Erreur lors de l\'enregistrement de la liste.');
+            console.error("Erreur lors de la suppression des prospects:", error);
+            setError("Erreur lors de la suppression des prospects");
+        } finally {
+            setLoading(false);
         }
     };
 
-    const filteredProspects = prospects.filter((prospect) =>
-        prospect.nom.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        prospect.prenom.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        prospect.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        prospect.societe.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    const handleSelectProspect = (id) => {
+        setSelectedProspects(prev =>
+            prev.includes(id)
+                ? prev.filter(prospectId => prospectId !== id)
+                : [...prev, id]
+        );
+    };
 
     return (
         <div className="prospect-list-widget">
-            <button onClick={() => setIsImportMode(!isImportMode)} className="import-btn">
-                {isImportMode ? 'Annuler' : 'Importer des prospects'}
-            </button>
+            <div className="prospect-actions">
+                <button
+                    onClick={() => setShowImportSection(!showImportSection)}
+                    className="toggle-import-btn"
+                    disabled={loading}
+                >
+                    Importer des prospects
+                </button>
+                <button
+                    onClick={handleDeleteSelected}
+                    className={`delete-btn ${selectedProspects.length > 0 ? 'enabled' : 'disabled'}`}
+                    disabled={loading || selectedProspects.length === 0}
+                >
+                    Supprimer les prospects sélectionnés
+                </button>
+            </div>
 
-            {isImportMode && (
-                <div className="import-section">
-                    <input
-                        type="text"
-                        placeholder="Nom de la liste (obligatoire)"
-                        value={listName}
-                        onChange={(e) => setListName(e.target.value)}
-                        className="input-list-name"
-                    />
+            {showImportSection && (
+                <div className="import-section-dropdown">
                     <CSVReader
                         onFileLoaded={handleFileUpload}
                         cssClass="csv-reader-input"
                         label="Importer une liste CSV"
-                        inputId="csv-upload"
-                        inputStyle={{ color: 'blue' }}
+                        parserOptions={{ header: false }}
                     />
-                    <button onClick={handleSaveList} className="save-list-btn">Enregistrer la liste</button>
                     {error && <p className="error-message">{error}</p>}
                 </div>
             )}
 
-            {/* Barre de recherche */}
-            <input
-                type="text"
-                placeholder="Rechercher un prospect..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="search-bar"
-            />
-
-            <div className="prospect-table-container">
-                <h4>Liste des Prospects</h4>
-                {filteredProspects.length > 0 ? (
-                    <table className="prospect-table">
-                        <thead>
-                        <tr>
-                            <th>Nom</th>
-                            <th>Prénom</th>
-                            <th>Email</th>
-                            <th>Société</th>
-                            <th>LinkedIn</th>
-                        </tr>
-                        </thead>
-                        <tbody>
-                        {filteredProspects.map((prospect, index) => (
-                            <tr key={index}>
-                                <td>{prospect.nom}</td>
-                                <td>{prospect.prenom}</td>
-                                <td>{prospect.email}</td>
-                                <td>{prospect.societe}</td>
-                                <td>{prospect.linkedin}</td>
-                            </tr>
-                        ))}
-                        </tbody>
-                    </table>
+            <div className={`prospect-content ${showImportSection ? 'dimmed' : ''}`}>
+                {loading ? (
+                    <div className="loading">Chargement...</div>
                 ) : (
-                    <p className="no-prospects-message">Aucun prospect correspondant à la recherche.</p>
+                    <div className="prospect-table-container">
+                        <table className="prospect-table">
+                            <thead>
+                            <tr>
+                                <th>Sélectionner</th>
+                                <th>Prénom</th>
+                                <th>Nom</th>
+                                <th>Email</th>
+                                <th>Société</th>
+                                <th>LinkedIn</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            {prospects.map((prospect) => (
+                                <tr key={prospect._id}>
+                                    <td>
+                                        <input
+                                            type="checkbox"
+                                            checked={selectedProspects.includes(prospect._id)}
+                                            onChange={() => handleSelectProspect(prospect._id)}
+                                        />
+                                    </td>
+                                    <td>{prospect.prenom}</td>
+                                    <td>{prospect.nom}</td>
+                                    <td>{prospect.email}</td>
+                                    <td>{prospect.societe}</td>
+                                    <td>{prospect.linkedin}</td>
+                                </tr>
+                            ))}
+                            </tbody>
+                        </table>
+                    </div>
                 )}
             </div>
         </div>
