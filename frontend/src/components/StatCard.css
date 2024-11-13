@@ -1,7 +1,6 @@
 /* StatCard.css */
 
 .stat-card {
-    background-color: #fff;
     border-radius: 10px;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
     padding: 10px;
@@ -37,7 +36,7 @@
 .stat-card-value {
     font-size: 24px;
     font-weight: bold;
-    color: #333;
+    color: #00A0DC;
     margin: 5px 0;
 }
 

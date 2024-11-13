@@ -68,29 +68,45 @@ const Dashboard = () => {
         try {
             const token = localStorage.getItem('token');
             if (!token) {
+                console.log('❌ Aucun token trouvé');
                 window.location.href = '/login';
                 return;
             }
 
+            // Utilisation de la route user au lieu de verify-token
             const response = await axios.get('http://localhost:5001/api/auth/user', {
-                headers: { Authorization: `Bearer ${token}` }
+                headers: {
+                    Authorization: `Bearer ${token}`
+                }
             });
 
-            if (response.data.valid && response.data.user) {
-                const { firstName, lastName } = response.data.user;
-                setUserData({
-                    ...response.data.user,
-                    avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(firstName)}+${encodeURIComponent(lastName)}&background=0D8ABC&color=fff&size=128`
-                });
+            console.log('Réponse du serveur:', response.data); // Debug
+
+            if (response.data) {
+                const userData = {
+                    firstName: response.data.firstName || '',
+                    lastName: response.data.lastName || '',
+                    email: response.data.email || '',
+                    // Gestion spéciale pour l'avatar avec vérification de l'URL
+                    avatar: response.data.avatar
+                };
+                setUserData(userData);
             }
         } catch (error) {
-            console.error("❌ Erreur chargement données utilisateur:", error);
+            console.error('❌ Erreur lors de la récupération des données:', error);
             if (error.response?.status === 401) {
+                console.log('❌ Token invalide');
                 localStorage.removeItem('token');
                 window.location.href = '/login';
             }
+        } finally {
+            setLoading(false);
         }
     };
+
+    useEffect(() => {
+        fetchUserData();
+    }, []);
 
     // Récupération des prospects
     const fetchProspects = async () => {
