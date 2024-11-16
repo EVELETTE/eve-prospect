@@ -59,8 +59,15 @@ const Login = () => {
                             required
                         />
                     </div>
+                    <p className="forgot-password">
+                        <a href="/forgot-password">Mot de passe oublié ?</a>
+                    </p>
                     <button type="submit" className="login-btn">Se connecter</button>
                 </form>
+                <div className="or-section">
+                    <span>OU</span>
+                </div>
+                <button className="apple-login-btn">Se connecter avec Apple</button>
                 <p className="join-now">
                     Nouveau sur notre plateforme ? <a href="/register">Inscrivez-vous</a>
                 </p>

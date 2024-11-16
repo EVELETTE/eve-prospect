@@ -6,6 +6,8 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 const authenticate = require('../middleware/authenticate');
+const nodemailer = require('nodemailer');
+const crypto = require('crypto');
 
 const router = express.Router();
 
@@ -93,6 +95,100 @@ router.post('/login', async (req, res) => {
     res.status(500).json({ success: false, message: '❌ Erreur serveur' });
   }
 });
+// 📧 Route pour demander une réinitialisation de mot de passe
+router.post('/forgot-password', async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: '❌ Email non trouvé'
+      });
+    }
+
+    // Générer un token temporaire
+    const resetToken = crypto.randomBytes(20).toString('hex');
+    user.resetPasswordToken = resetToken;
+    user.resetPasswordExpires = Date.now() + 3600000; // 1 heure
+    await user.save();
+
+    // Configurer le transporteur de mails
+    const transporter = nodemailer.createTransport({
+      service: 'Gmail',
+      auth: {
+        user: process.env.EMAIL_USERNAME,
+        pass: process.env.EMAIL_PASSWORD
+      }
+    });
+
+    // Envoyer le mail
+    const mailOptions = {
+      to: user.email,
+      from: process.env.EMAIL_USERNAME,
+      subject: 'Réinitialisation de mot de passe',
+      text: `Vous recevez cet email car vous (ou quelqu'un d'autre) avez demandé la réinitialisation de votre mot de passe.\n\n
+            Cliquez sur le lien suivant, ou copiez-le dans votre navigateur pour compléter le processus:\n\n
+            http://localhost:3000/reset-password/${resetToken}\n\n
+            Si vous n'avez pas demandé cette opération, ignorez cet email.\n`
+    };
+
+    await transporter.sendMail(mailOptions);
+
+    res.json({
+      success: true,
+      message: '✅ Email de réinitialisation envoyé'
+    });
+  } catch (error) {
+    console.error('❌ Erreur lors de la demande de réinitialisation:', error);
+    res.status(500).json({
+      success: false,
+      message: '❌ Erreur serveur'
+    });
+  }
+});
+
+// 🔑 Route pour réinitialiser le mot de passe
+router.post('/reset-password/:token', async (req, res) => {
+  try {
+    const { token } = req.params;
+    const { password } = req.body;
+
+    console.log('Token:', token);
+    console.log('Nouveau mot de passe:', password);
+
+    const user = await User.findOne({
+      resetPasswordToken: token,
+      resetPasswordExpires: { $gt: Date.now() }
+    });
+
+    if (!user) {
+      console.log('Utilisateur non trouvé ou token expiré');
+      return res.status(400).json({
+        success: false,
+        message: '❌ Token invalide ou expiré'
+      });
+    }
+
+    user.password = await bcrypt.hash(password, 12);
+    user.resetPasswordToken = undefined;
+    user.resetPasswordExpires = undefined;
+    await user.save();
+
+    res.json({
+      success: true,
+      message: '✅ Mot de passe réinitialisé avec succès'
+    });
+  } catch (error) {
+    console.error('❌ Erreur lors de la réinitialisation:', error);
+    res.status(500).json({
+      success: false,
+      message: '❌ Erreur serveur'
+    });
+  }
+});
+
 
 // 📧 Route de mise à jour de l'email
 router.put('/update-email', authenticate, async (req, res) => {

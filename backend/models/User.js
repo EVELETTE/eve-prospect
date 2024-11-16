@@ -11,7 +11,9 @@ const UserSchema = new mongoose.Schema({
             return `https://avatars.dicebear.com/api/initials/${this.firstName}%20${this.lastName}.svg`;
         }
     },
-    campaigns: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Campaign' }]
+    campaigns: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Campaign' }],
+    resetPasswordToken: { type: String },
+    resetPasswordExpires: { type: Date }
 });
 
 module.exports = mongoose.model('User', UserSchema);

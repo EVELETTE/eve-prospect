@@ -1,9 +1,8 @@
-// src/components/Register.js
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import './Register.css';
-import LogoLight from '../assets/logo-light.png'; // Importation du logo
+import LogoLight from '../assets/logo-light.png';
 
 const Register = () => {
     const [prenom, setPrenom] = useState('');
@@ -30,7 +29,7 @@ const Register = () => {
                 setMessage('Inscription réussie, mais aucun token fourni.');
             }
         } catch (error) {
-            setMessage('Échec de l’inscription');
+            setMessage('Échec de l’inscription. Vérifiez vos informations.');
             console.error('Erreur lors de l’inscription:', error);
         }
     };
@@ -38,7 +37,7 @@ const Register = () => {
     return (
         <div className="register-container">
             <div className="register-box">
-                <img src={LogoLight} alt="Eve-Prospect Logo" className="register-logo" /> {/* Logo ajouté */}
+                <img src={LogoLight} alt="Eve-Prospect Logo" className="register-logo" />
                 <h2>Inscription</h2>
                 <p>Rejoignez-nous</p>
                 {message && <p className="error-message">{message}</p>}

@@ -45,6 +45,10 @@ const Dashboard = () => {
     const [prospects, setProspects] = useState([]);
     const menuRef = useRef(null);
 
+    // Nouveaux états pour le contrôle des sections
+    const [showProspects, setShowProspects] = useState(true);
+    const [showStats, setShowStats] = useState(true);
+
     // Chargement initial des données
     useEffect(() => {
         fetchUserData();
@@ -73,21 +77,19 @@ const Dashboard = () => {
                 return;
             }
 
-            // Utilisation de la route user au lieu de verify-token
             const response = await axios.get('http://localhost:5001/api/auth/user', {
                 headers: {
                     Authorization: `Bearer ${token}`
                 }
             });
 
-            console.log('Réponse du serveur:', response.data); // Debug
+            console.log('Réponse du serveur:', response.data);
 
             if (response.data) {
                 const userData = {
                     firstName: response.data.firstName || '',
                     lastName: response.data.lastName || '',
                     email: response.data.email || '',
-                    // Gestion spéciale pour l'avatar avec vérification de l'URL
                     avatar: response.data.avatar
                 };
                 setUserData(userData);
@@ -95,7 +97,6 @@ const Dashboard = () => {
         } catch (error) {
             console.error('❌ Erreur lors de la récupération des données:', error);
             if (error.response?.status === 401) {
-                console.log('❌ Token invalide');
                 localStorage.removeItem('token');
                 window.location.href = '/login';
             }
@@ -103,10 +104,6 @@ const Dashboard = () => {
             setLoading(false);
         }
     };
-
-    useEffect(() => {
-        fetchUserData();
-    }, []);
 
     // Récupération des prospects
     const fetchProspects = async () => {
@@ -155,10 +152,8 @@ const Dashboard = () => {
     };
 
     if (loading) return <div className="loading">🔄 Chargement...</div>;
-    if (error) return <div className="error">❌ {error}</div>;
-
-    return (
-        <div className="dashboard-container">
+    if (error) return <div className="error">❌ {error}</div>;return (
+        <div className={`dashboard-container ${isDarkTheme ? 'dark' : ''}`}>
             <header className="dashboard-header">
                 <img src={isDarkTheme ? LogoDark : LogoLight} alt="Logo" className="dashboard-logo" />
                 <div className="header-actions">
@@ -190,6 +185,9 @@ const Dashboard = () => {
                                 <button className="menu-item" onClick={handleRefreshData}>
                                     🔄 Rafraîchir
                                 </button>
+                                <button className="menu-item theme-toggle" onClick={() => setIsDarkTheme(!isDarkTheme)}>
+                                    {isDarkTheme ? '☀️ Mode clair' : '🌙 Mode sombre'}
+                                </button>
                                 <button className="menu-item logout" onClick={handleLogout}>
                                     🚪 Déconnexion
                                 </button>
@@ -204,48 +202,70 @@ const Dashboard = () => {
                     <Settings onBack={() => setShowSettings(false)} userData={userData} />
                 ) : (
                     <>
-                        <section className="statistics">
-                            <h3>📊 Statistiques</h3>
-                            <div className="stat-box">
-                                <StatCard
-                                    icon="👥"
-                                    value={prospects.length}
-                                    label="Prospects ajoutés"
-                                    color="#0077B5"
+                        {showProspects && (
+                            <section className="prospects-section" key="prospects">
+                                <h3>👥 Gestion des Prospects</h3>
+                                <ProspectListWidget
+                                    prospects={prospects}
+                                    onProspectsUpdate={setProspects}
+                                    onRefresh={handleRefreshData}
                                 />
-                                <StatCard
-                                    icon="📨"
-                                    value={Math.round(prospects.length * 1.5)}
-                                    label="Invitations envoyées"
-                                    color="#00A0DC"
-                                />
-                                <StatCard
-                                    icon="✉️"
-                                    value={Math.round(prospects.length * 0.8)}
-                                    label="Messages envoyés"
-                                    color="#0066FF"
-                                />
-                                <StatCard
-                                    icon="🤝"
-                                    value={Math.round(prospects.length * 0.6)}
-                                    label="Connexions réalisées"
-                                    color="#0A66C2"
-                                />
-                            </div>
+                            </section>
+                        )}
 
-                            <div className="stat-chart">
-                                <Line data={chartData} />
-                            </div>
-                        </section>
+                        {showStats && (
+                            <section className="statistics" key="stats">
+                                <h3>📊 Statistiques</h3>
+                                <div className="stat-box">
+                                    <StatCard
+                                        icon="👥"
+                                        value={prospects.length}
+                                        label="Prospects ajoutés"
+                                        color="#0077B5"
+                                    />
+                                    <StatCard
+                                        icon="📨"
+                                        value={Math.round(prospects.length * 1.5)}
+                                        label="Invitations envoyées"
+                                        color="#00A0DC"
+                                    />
+                                    <StatCard
+                                        icon="✉️"
+                                        value={Math.round(prospects.length * 0.8)}
+                                        label="Messages envoyés"
+                                        color="#0066FF"
+                                    />
+                                    <StatCard
+                                        icon="🤝"
+                                        value={Math.round(prospects.length * 0.6)}
+                                        label="Connexions réalisées"
+                                        color="#0A66C2"
+                                    />
+                                </div>
 
-                        <section className="prospects-section">
-                            <h3>👥 Gestion des Prospects</h3>
-                            <ProspectListWidget
-                                prospects={prospects}
-                                onProspectsUpdate={setProspects}
-                                onRefresh={handleRefreshData}
-                            />
-                        </section>
+                                <div className="stat-chart">
+                                    <Line data={chartData}/>
+                                </div>
+                            </section>
+                        )}
+
+                        {/* Contrôles des sections */}
+                        <div className="sections-control">
+                            <div className="control-buttons">
+                                <button
+                                    className={`section-toggle ${showProspects ? 'active' : ''}`}
+                                    onClick={() => setShowProspects(!showProspects)}
+                                >
+                                    {showProspects ? '➖' : '➕'} Prospects
+                                </button>
+                                <button
+                                    className={`section-toggle ${showStats ? 'active' : ''}`}
+                                    onClick={() => setShowStats(!showStats)}
+                                >
+                                    {showStats ? '➖' : '➕'} Statistiques
+                                </button>
+                            </div>
+                        </div>
                     </>
                 )}
             </div>

@@ -18,7 +18,8 @@ router.post('/add', authenticate, async (req, res) => {
         if (existingProspect) {
             return res.status(400).json({
                 success: false,
-                message: '❌ Ce prospect existe déjà dans votre liste'
+                message: `❌ Ce prospect existe déjà dans votre liste avec le nom ${existingProspect.firstName} ${existingProspect.lastName}`,
+                prospect: existingProspect // Ajoutez le prospect existant pour plus de contexte
             });
         }
 

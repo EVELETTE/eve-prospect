@@ -4,6 +4,7 @@ const dotenv = require('dotenv');
 const cors = require('cors');
 const path = require('path');
 
+
 dotenv.config();
 
 const app = express();
@@ -44,10 +45,12 @@ app.use((req, res, next) => {
 
 const authRoutes = require('./routes/auth');
 const prospectRoutes = require('./routes/prospects');
+const listsRoutes = require('./routes/lists');
 
 app.use('/api/auth', authRoutes);
 app.use('/api/prospects', prospectRoutes);
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+app.use('/api/lists', listsRoutes);
 
 // Middleware de gestion des erreurs
 app.use((error, req, res, next) => {
