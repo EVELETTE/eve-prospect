@@ -16,7 +16,7 @@ const ResetPassword = () => {
 
         // Vérification si les mots de passe correspondent
         if (password !== confirmPassword) {
-            setError('Les mots de passe ne correspondent pas.');
+            setError('❌ Les mots de passe ne correspondent pas.');
             setMessage('');
             return;
         }
@@ -27,7 +27,7 @@ const ResetPassword = () => {
                 password,
             });
 
-            setMessage('Mot de passe réinitialisé avec succès !');
+            setMessage('✅ Mot de passe réinitialisé avec succès !');
             setError('');
 
             // Redirection après 3 secondes
@@ -35,7 +35,7 @@ const ResetPassword = () => {
                 navigate('/login'); // Redirection vers la page de connexion
             }, 3000);
         } catch (err) {
-            setError(err.response?.data?.message || 'Erreur lors de la réinitialisation.');
+            setError('❌ ' + (err.response?.data?.message || 'Erreur lors de la réinitialisation.'));
             setMessage('');
         }
     };
@@ -44,8 +44,8 @@ const ResetPassword = () => {
         <div className="reset-password-container">
             <div className="reset-password-box">
                 <h2>Réinitialiser le mot de passe</h2>
-                {message && <p className="success-message">{message}</p>}
-                {error && <p className="error-message">{error}</p>}
+                {message && <div className="message success">{message}</div>}
+                {error && <div className="message error">{error}</div>}
                 <form onSubmit={handleSubmit}>
                     <div className="input-field">
                         <input

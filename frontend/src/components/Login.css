@@ -156,3 +156,26 @@
 .join-now a:hover {
     text-decoration: underline;
 }
+
+/* Messages d'erreur et de succès */
+.message {
+    margin: 15px 0;
+    padding: 10px;
+    border-radius: 4px;
+    font-size: 14px;
+    font-weight: bold;
+    text-align: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.message.success {
+    background-color: #28a745; /* Vert pour succès */
+    color: white;
+}
+
+.message.error {
+    background-color: #dc3545; /* Rouge pour erreur */
+    color: white;
+}

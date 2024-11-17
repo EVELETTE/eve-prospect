@@ -46,7 +46,9 @@ app.use((req, res, next) => {
 const authRoutes = require('./routes/auth');
 const prospectRoutes = require('./routes/prospects');
 const listsRoutes = require('./routes/lists');
+const notificationRoutes = require('./routes/notifications');
 
+app.use('/api/notifications', notificationRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/prospects', prospectRoutes);
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));

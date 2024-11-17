@@ -7,7 +7,8 @@ import LogoLight from '../assets/logo-light.png';
 const Login = () => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
-    const [message, setMessage] = useState('');
+    const [message, setMessage] = useState(null);
+    const [messageType, setMessageType] = useState(''); // success ou error
     const navigate = useNavigate();
 
     const handleSubmit = async (e) => {
@@ -15,7 +16,7 @@ const Login = () => {
         try {
             const response = await axios.post('http://localhost:5001/api/auth/login', {
                 email,
-                password
+                password,
             });
 
             const token = response.data.token;
@@ -27,9 +28,12 @@ const Login = () => {
             window.postMessage({ type: 'SET_TOKEN', token }, '*');
 
             // Rediriger vers le tableau de bord
-            navigate('/dashboard');
+            setMessage('Connexion réussie !');
+            setMessageType('success');
+            setTimeout(() => navigate('/dashboard'), 1000); // Redirection après succès
         } catch (error) {
-            setMessage(error.response?.data?.message || 'Échec de la connexion');
+            setMessage(error.response?.data?.message || 'Email ou mot de passe incorrect.');
+            setMessageType('error');
         }
     };
 
@@ -39,7 +43,13 @@ const Login = () => {
                 <img src={LogoLight} alt="Eve-Prospect Logo" className="login-logo" />
                 <h2>Connexion</h2>
                 <p>Restez informé de votre monde professionnel</p>
-                {message && <p className="error-message">{message}</p>}
+                {message && (
+                    <div className={`message ${messageType}`}>
+                        {messageType === 'error'}
+                        {messageType === 'success' && '✅ '}
+                        {message}
+                    </div>
+                )}
                 <form onSubmit={handleSubmit}>
                     <div className="input-field">
                         <input

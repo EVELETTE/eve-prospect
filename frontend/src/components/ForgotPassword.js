@@ -6,7 +6,7 @@ import './ForgotPassword.css';
 const ForgotPassword = () => {
     const [email, setEmail] = useState('');
     const [message, setMessage] = useState('');
-    const [error, setError] = useState('');
+    const [messageType, setMessageType] = useState(''); // 'success' ou 'error'
     const navigate = useNavigate(); // Hook pour redirection
 
     const handleSubmit = async (e) => {
@@ -14,15 +14,15 @@ const ForgotPassword = () => {
         try {
             const response = await axios.post('http://localhost:5001/api/auth/forgot-password', { email });
             setMessage('Un email de réinitialisation a été envoyé.');
-            setError('');
+            setMessageType('success');
 
             // Redirection après succès
             setTimeout(() => {
                 navigate('/login'); // Redirige vers la page login après 3 secondes
             }, 3000);
         } catch (err) {
-            setError(err.response?.data?.message || 'Erreur lors de la demande de réinitialisation.');
-            setMessage('');
+            setMessage('Erreur lors de la demande de réinitialisation.');
+            setMessageType('error');
         }
     };
 
@@ -35,8 +35,12 @@ const ForgotPassword = () => {
             <div className="forgot-password-box">
                 <h2>Mot de passe oublié</h2>
                 <p>Entrez votre email pour recevoir un lien de réinitialisation.</p>
-                {message && <p className="success-message">{message}</p>}
-                {error && <p className="error-message">{error}</p>}
+                {message && (
+                    <div className={`message ${messageType}`}>
+                        <span className="icon">{messageType === 'success' ? '✅' : '❌'}</span>
+                        {message}
+                    </div>
+                )}
                 <form onSubmit={handleSubmit}>
                     <div className="input-field">
                         <input
@@ -52,11 +56,6 @@ const ForgotPassword = () => {
                 <button onClick={handleCancel} className="cancel-btn">
                     Annuler
                 </button>
-                {message && (
-                    <p className="redirect-message">
-                        Vous serez redirigé vers la page de connexion sous peu...
-                    </p>
-                )}
             </div>
         </div>
     );
