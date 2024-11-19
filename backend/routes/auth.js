@@ -123,15 +123,44 @@ router.post('/forgot-password', async (req, res) => {
       }
     });
 
-    // Envoyer le mail
+    // Lien de réinitialisation
+    const resetLink = `http://localhost:3000/reset-password/${resetToken}`;
+
+    // Email stylisé
     const mailOptions = {
       to: user.email,
       from: process.env.EMAIL_USERNAME,
       subject: 'Réinitialisation de mot de passe',
-      text: `Vous recevez cet email car vous (ou quelqu'un d'autre) avez demandé la réinitialisation de votre mot de passe.\n\n
-            Cliquez sur le lien suivant, ou copiez-le dans votre navigateur pour compléter le processus:\n\n
-            http://localhost:3000/reset-password/${resetToken}\n\n
-            Si vous n'avez pas demandé cette opération, ignorez cet email.\n`
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #ddd; border-radius: 8px; background-color: #f9f9f9;">
+          <div style="text-align: center; margin-bottom: 20px;">
+            <img src="https://your-logo-url.com/logo.png" alt="Logo" style="width: 150px; height: auto;">
+          </div>
+          <h2 style="text-align: center; color: #333;">Réinitialisation de mot de passe</h2>
+          <p style="font-size: 16px; color: #555;">
+            Bonjour ${user.firstName || 'Utilisateur'},
+          </p>
+          <p style="font-size: 16px; color: #555;">
+            Vous avez demandé une réinitialisation de votre mot de passe. Cliquez sur le bouton ci-dessous pour réinitialiser votre mot de passe :
+          </p>
+          <div style="text-align: center; margin: 20px 0;">
+            <a href="${resetLink}" style="background-color: #B11B26; color: white; text-decoration: none; padding: 12px 20px; border-radius: 5px; font-size: 16px;">Réinitialiser mon mot de passe</a>
+          </div>
+          <p style="font-size: 16px; color: #555;">
+            Ou copiez et collez le lien suivant dans votre navigateur :
+          </p>
+          <p style="font-size: 16px; color: #B11B26; word-break: break-word;">
+            <a href="${resetLink}" style="color: #B11B26; text-decoration: none;">${resetLink}</a>
+          </p>
+          <p style="font-size: 14px; color: #777;">
+            Si vous n'avez pas demandé cette réinitialisation, veuillez ignorer cet email.
+          </p>
+          <div style="text-align: center; margin-top: 20px; font-size: 14px; color: #999;">
+            <p>Merci,</p>
+            <p>L'équipe eve-prospect</p>
+          </div>
+        </div>
+      `
     };
 
     await transporter.sendMail(mailOptions);
@@ -148,7 +177,6 @@ router.post('/forgot-password', async (req, res) => {
     });
   }
 });
-
 // 🔑 Route pour réinitialiser le mot de passe
 router.post('/reset-password/:token', async (req, res) => {
   try {

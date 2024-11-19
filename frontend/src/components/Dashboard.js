@@ -6,6 +6,7 @@ import LogoLight from '../assets/logo-light.png';
 import LogoDark from '../assets/logo-dark.png';
 import StatCard from './StatCard';
 import ProspectListWidget from './ProspectListWidget';
+import NotificationCenter from './NotificationCenter';
 import {
     Chart as ChartJS,
     LineElement,
@@ -20,13 +21,6 @@ import {
 import { Line } from 'react-chartjs-2';
 
 ChartJS.register(LineElement, PointElement, LineController, CategoryScale, LinearScale, Title, Tooltip, Legend);
-
-// 🔔 Icône de notification personnalisée
-const NotificationIcon = () => (
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path d="M12 22C13.1 22 14 21.1 14 20H10C10 21.1 10.9 22 12 22ZM18 16V11C18 7.93 16.37 5.36 13.5 4.68V4C13.5 3.17 12.83 2.5 12 2.5C11.17 2.5 10.5 3.17 10.5 4V4.68C7.64 5.36 6 7.92 6 11V16L4 18V19H20V18L18 16ZM16 17H8V11C8 8.52 9.51 6.5 12 6.5C14.49 6.5 16 8.52 16 11V17Z" fill="currentColor"/>
-    </svg>
-);
 
 const Dashboard = () => {
     // États
@@ -43,11 +37,9 @@ const Dashboard = () => {
     const [isDarkTheme, setIsDarkTheme] = useState(true);
     const [selectedStat, setSelectedStat] = useState("Prospects ajoutés");
     const [prospects, setProspects] = useState([]);
-    const menuRef = useRef(null);
-
-    // Nouveaux états pour le contrôle des sections
     const [showProspects, setShowProspects] = useState(true);
     const [showStats, setShowStats] = useState(true);
+    const menuRef = useRef(null);
 
     // Chargement initial des données
     useEffect(() => {
@@ -82,8 +74,6 @@ const Dashboard = () => {
                     Authorization: `Bearer ${token}`
                 }
             });
-
-            console.log('Réponse du serveur:', response.data);
 
             if (response.data) {
                 const userData = {
@@ -152,7 +142,9 @@ const Dashboard = () => {
     };
 
     if (loading) return <div className="loading">🔄 Chargement...</div>;
-    if (error) return <div className="error">❌ {error}</div>;return (
+    if (error) return <div className="error">❌ {error}</div>;
+
+    return (
         <div className={`dashboard-container ${isDarkTheme ? 'dark' : ''}`}>
             <header className="dashboard-header">
                 <img src={isDarkTheme ? LogoDark : LogoLight} alt="Logo" className="dashboard-logo" />
@@ -160,10 +152,8 @@ const Dashboard = () => {
                     <button className="start-campaign-btn">
                         Démarrer une campagne
                     </button>
-                    <div className="notification-icon">
-                        <span className="notification-count">{prospects.length}</span>
-                        <NotificationIcon />
-                    </div>
+                    {/* Remplacement de l'ancien composant de notification par le nouveau NotificationCenter */}
+                    <NotificationCenter />
                     <div className="user-profile" onClick={toggleMenu} ref={menuRef}>
                         <img
                             src={userData.avatar}
@@ -185,7 +175,10 @@ const Dashboard = () => {
                                 <button className="menu-item" onClick={handleRefreshData}>
                                     🔄 Rafraîchir
                                 </button>
-                                <button className="menu-item theme-toggle" onClick={() => setIsDarkTheme(!isDarkTheme)}>
+                                <button
+                                    className="menu-item theme-toggle"
+                                    onClick={() => setIsDarkTheme(!isDarkTheme)}
+                                >
                                     {isDarkTheme ? '☀️ Mode clair' : '🌙 Mode sombre'}
                                 </button>
                                 <button className="menu-item logout" onClick={handleLogout}>
@@ -244,12 +237,11 @@ const Dashboard = () => {
                                 </div>
 
                                 <div className="stat-chart">
-                                    <Line data={chartData}/>
+                                    <Line data={chartData} />
                                 </div>
                             </section>
                         )}
 
-                        {/* Contrôles des sections */}
                         <div className="sections-control">
                             <div className="control-buttons">
                                 <button

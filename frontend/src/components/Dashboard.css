@@ -92,7 +92,6 @@
 
 .user-name {
     font-weight: 500;
-    color: #333;
     font-size: 14px;
 }
 
@@ -209,7 +208,6 @@ h3 {
     display: flex;
     justify-content: center;
     align-items: center;
-    min-height: 100vh;
     color: #dc3545;
     font-size: 16px;
 }
