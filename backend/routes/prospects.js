@@ -4,35 +4,53 @@ const Prospect = require('../models/Prospect');
 const Notification = require('../models/Notification');
 const authenticate = require('../middleware/authenticate');
 
-// Route pour ajouter un prospect
+// Ajout d'un prospect
 router.post('/add', authenticate, async (req, res) => {
     try {
-        const { prenom, nom, email, societe, linkedin, location } = req.body;
+        const { prenom, nom, email, societe, linkedin, location, position, description } = req.body;
         console.log("📥 Données reçues:", req.body);
 
-        // Vérifier si le prospect existe déjà
+        // Vérification du doublon
         const existingProspect = await Prospect.findOne({
             profileLink: linkedin,
             userId: req.userId
         });
 
         if (existingProspect) {
-            // Créer une notification pour le doublon
+            // Mise à jour du prospect existant
+            const updatedProspect = await Prospect.findByIdAndUpdate(
+                existingProspect._id,
+                {
+                    $set: {
+                        firstName: prenom,
+                        lastName: nom,
+                        email: email || existingProspect.email,
+                        company: societe || existingProspect.company,
+                        location: location || existingProspect.location,
+                        position: position || existingProspect.position,
+                        description: description || existingProspect.description,
+                        extractedAt: new Date()
+                    }
+                },
+                { new: true }
+            );
+
             await new Notification({
                 userId: req.userId,
-                title: 'Doublon détecté',
-                message: `Le prospect ${prenom} ${nom} existe déjà dans votre liste sous le nom ${existingProspect.firstName} ${existingProspect.lastName}`,
-                type: 'warning'
+                title: 'Prospect mis à jour',
+                message: `Les informations de ${prenom} ${nom} ont été mises à jour.`,
+                type: 'info'
             }).save();
 
-            return res.status(400).json({
-                success: false,
-                message: `❌ Ce prospect existe déjà dans votre liste avec le nom ${existingProspect.firstName} ${existingProspect.lastName}`,
-                prospect: existingProspect
+            return res.json({
+                success: true,
+                message: '✅ Prospect mis à jour',
+                prospect: updateProspectFormat(updatedProspect),
+                updated: true
             });
         }
 
-        // Créer le nouveau prospect
+        // Création d'un nouveau prospect
         const prospect = new Prospect({
             firstName: prenom,
             lastName: nom,
@@ -40,43 +58,36 @@ router.post('/add', authenticate, async (req, res) => {
             email: email || 'Non disponible',
             company: societe || 'Non disponible',
             location: location || 'Non disponible',
-            userId: req.userId
+            position: position || 'Non disponible',
+            description: description || 'Non disponible',
+            userId: req.userId,
+            source: req.body.source || 'profil',
+            extractedAt: new Date()
         });
 
         await prospect.save();
         console.log('✅ Prospect sauvegardé:', prospect);
 
-        // Créer une notification pour l'ajout réussi
         await new Notification({
             userId: req.userId,
             title: 'Nouveau prospect ajouté',
-            message: `${prenom} ${nom} de ${societe} a été ajouté à votre liste`,
+            message: `${prenom} ${nom} de ${societe} a été ajouté avec succès.`,
             type: 'success',
-            link: linkedin // Ajouter le lien LinkedIn pour un accès rapide
+            link: linkedin
         }).save();
 
         res.status(201).json({
             success: true,
             message: '✅ Prospect ajouté avec succès',
-            prospect: {
-                _id: prospect._id,
-                nom: prospect.lastName,
-                prenom: prospect.firstName,
-                email: prospect.email,
-                societe: prospect.company,
-                linkedin: prospect.profileLink,
-                location: prospect.location
-            }
+            prospect: updateProspectFormat(prospect),
+            created: true
         });
-
     } catch (error) {
-        console.error('❌ Erreur lors de l\'ajout du prospect:', error);
-
-        // Créer une notification pour l'erreur
+        console.error('❌ Erreur:', error);
         await new Notification({
             userId: req.userId,
             title: 'Erreur d\'ajout',
-            message: 'Une erreur est survenue lors de l\'ajout du prospect',
+            message: 'Une erreur est survenue lors de l\'ajout du prospect.',
             type: 'error'
         }).save();
 
@@ -88,34 +99,131 @@ router.post('/add', authenticate, async (req, res) => {
     }
 });
 
-// Route pour récupérer tous les prospects
-router.get('/', authenticate, async (req, res) => {
+// Ajout en batch de prospects
+router.post('/batch', authenticate, async (req, res) => {
     try {
-        const prospects = await Prospect.find({ userId: req.userId })
-            .sort({ createdAt: -1 });
+        const { prospects } = req.body;
+        if (!Array.isArray(prospects)) {
+            throw new Error('Les données doivent être un tableau de prospects');
+        }
 
-        const transformedProspects = prospects.map(prospect => ({
-            _id: prospect._id,
-            nom: prospect.lastName,
-            prenom: prospect.firstName,
-            email: prospect.email,
-            societe: prospect.company,
-            linkedin: prospect.profileLink,
-            location: prospect.location
-        }));
+        const results = {
+            created: 0,
+            updated: 0,
+            failed: 0,
+            details: []
+        };
+
+        for (const prospectData of prospects) {
+            try {
+                const { prenom, nom, linkedin, ...otherData } = prospectData;
+
+                const existingProspect = await Prospect.findOne({
+                    profileLink: linkedin,
+                    userId: req.userId
+                });
+
+                if (existingProspect) {
+                    await Prospect.findByIdAndUpdate(
+                        existingProspect._id,
+                        {
+                            $set: {
+                                firstName: prenom,
+                                lastName: nom,
+                                ...otherData,
+                                extractedAt: new Date()
+                            }
+                        }
+                    );
+                    results.updated++;
+                } else {
+                    const newProspect = new Prospect({
+                        firstName: prenom,
+                        lastName: nom,
+                        profileLink: linkedin,
+                        ...otherData,
+                        userId: req.userId,
+                        source: 'recherche',
+                        extractedAt: new Date()
+                    });
+                    await newProspect.save();
+                    results.created++;
+                }
+            } catch (error) {
+                console.error('Erreur prospect individuel:', error);
+                results.failed++;
+                results.details.push({
+                    prospect: prospectData,
+                    error: error.message
+                });
+            }
+        }
+
+        await new Notification({
+            userId: req.userId,
+            title: 'Import de prospects',
+            message: `${results.created} créés, ${results.updated} mis à jour, ${results.failed} échoués`,
+            type: 'info'
+        }).save();
 
         res.json({
             success: true,
-            prospects: transformedProspects
+            message: 'Traitement terminé',
+            results
+        });
+    } catch (error) {
+        console.error('❌ Erreur batch:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Erreur lors du traitement batch',
+            error: error.message
+        });
+    }
+});
+
+// Récupération des prospects
+router.get('/', authenticate, async (req, res) => {
+    try {
+        const { page = 1, limit = 50, status, source, search } = req.query;
+        const query = { userId: req.userId };
+
+        // Application des filtres
+        if (status) query.status = status;
+        if (source) query.source = source;
+        if (search) {
+            query.$or = [
+                { firstName: { $regex: search, $options: 'i' } },
+                { lastName: { $regex: search, $options: 'i' } },
+                { company: { $regex: search, $options: 'i' } }
+            ];
+        }
+
+        // Récupération avec pagination
+        const prospects = await Prospect.find(query)
+            .sort({ createdAt: -1 })
+            .skip((page - 1) * limit)
+            .limit(parseInt(limit));
+
+        const total = await Prospect.countDocuments(query);
+
+        const transformedProspects = prospects.map(updateProspectFormat);
+
+        res.json({
+            success: true,
+            prospects: transformedProspects,
+            pagination: {
+                total,
+                page: parseInt(page),
+                pages: Math.ceil(total / limit)
+            }
         });
     } catch (error) {
         console.error('❌ Erreur lors de la récupération des prospects:', error);
 
-        // Créer une notification pour l'erreur de chargement
         await new Notification({
             userId: req.userId,
             title: 'Erreur de chargement',
-            message: 'Impossible de charger la liste des prospects',
+            message: 'Impossible de charger la liste des prospects.',
             type: 'error'
         }).save();
 
@@ -126,7 +234,7 @@ router.get('/', authenticate, async (req, res) => {
     }
 });
 
-// Route pour supprimer des prospects
+// Suppression d'un prospect
 router.delete('/:id', authenticate, async (req, res) => {
     try {
         const prospect = await Prospect.findOne({
@@ -143,11 +251,10 @@ router.delete('/:id', authenticate, async (req, res) => {
 
         await prospect.deleteOne();
 
-        // Créer une notification pour la suppression réussie
         await new Notification({
             userId: req.userId,
             title: 'Prospect supprimé',
-            message: `${prospect.firstName} ${prospect.lastName} a été retiré de votre liste`,
+            message: `${prospect.firstName} ${prospect.lastName} a été retiré de votre liste.`,
             type: 'info'
         }).save();
 
@@ -158,11 +265,10 @@ router.delete('/:id', authenticate, async (req, res) => {
     } catch (error) {
         console.error('❌ Erreur lors de la suppression:', error);
 
-        // Créer une notification pour l'erreur de suppression
         await new Notification({
             userId: req.userId,
             title: 'Erreur de suppression',
-            message: 'Impossible de supprimer le prospect',
+            message: 'Impossible de supprimer le prospect.',
             type: 'error'
         }).save();
 
@@ -172,5 +278,68 @@ router.delete('/:id', authenticate, async (req, res) => {
         });
     }
 });
+
+// Mise à jour du statut d'un prospect
+router.put('/:id/status', authenticate, async (req, res) => {
+    try {
+        const { status } = req.body;
+
+        const prospect = await Prospect.findOneAndUpdate(
+            { _id: req.params.id, userId: req.userId },
+            {
+                $set: {
+                    status,
+                    lastContactedAt: status === 'contacté' ? new Date() : undefined
+                }
+            },
+            { new: true }
+        );
+
+        if (!prospect) {
+            return res.status(404).json({
+                success: false,
+                message: '❌ Prospect non trouvé'
+            });
+        }
+
+        await new Notification({
+            userId: req.userId,
+            title: 'Statut mis à jour',
+            message: `Le statut de ${prospect.firstName} ${prospect.lastName} a été mis à jour en "${status}".`,
+            type: 'info'
+        }).save();
+
+        res.json({
+            success: true,
+            message: '✅ Statut mis à jour avec succès',
+            prospect: updateProspectFormat(prospect)
+        });
+    } catch (error) {
+        console.error('❌ Erreur lors de la mise à jour du statut:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Erreur lors de la mise à jour du statut'
+        });
+    }
+});
+
+// Fonction utilitaire pour formater les données de prospect
+function updateProspectFormat(prospect) {
+    return {
+        _id: prospect._id,
+        nom: prospect.lastName,
+        prenom: prospect.firstName,
+        email: prospect.email,
+        societe: prospect.company,
+        linkedin: prospect.profileLink,
+        location: prospect.location,
+        position: prospect.position,
+        status: prospect.status,
+        source: prospect.source,
+        extractedAt: prospect.extractedAt,
+        createdAt: prospect.createdAt,
+        lastContactedAt: prospect.lastContactedAt
+    };
+}
 
 module.exports = router;

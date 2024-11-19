@@ -7,19 +7,6 @@
 }
 
 /* Bouton de notification */
-.notification-button {
-    background: transparent;
-    border: none;
-    cursor: pointer;
-    padding: 8px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    position: relative;
-    color: #ffffff;
-    transition: background-color 0.2s ease, transform 0.2s ease;
-}
 
 .notification-button:hover {
     background-color: rgba(255, 255, 255, 0.1);
@@ -47,7 +34,6 @@
     justify-content: center;
     padding: 0 5px;
     font-weight: 500;
-    border: 2px solid #1c1c1c;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 

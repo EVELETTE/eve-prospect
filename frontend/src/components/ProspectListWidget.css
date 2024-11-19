@@ -1,6 +1,7 @@
 /* Conteneur principal du widget de liste de prospects */
 .prospect-list-widget {
     display: flex;
+    height: 700px;
 }
 
 /* Barre latérale des listes */
@@ -9,6 +10,7 @@
     padding: 20px;
     background-color: #f9f9f9;
     border-right: 1px solid #ddd;
+    height: 660px;
 }
 
 .list-sidebar h3 {
@@ -61,7 +63,6 @@
 }
 
 .list-count {
-    color: #666;
     font-size: 0.9em;
 }
 
@@ -91,6 +92,9 @@
 
 /* Boutons */
 .btn {
+    display: flex;
+    align-items: center;
+    gap: 8px; /* Espace entre l'icône et le texte */
     padding: 10px 20px;
     border-radius: 5px;
     font-weight: bold;
@@ -150,7 +154,7 @@
 
 /* Table des prospects */
 .prospect-table-container {
-    max-height: 300px;
+    max-height: 600px;
     overflow-y: auto;
     border-radius: 8px;
 }
@@ -243,7 +247,6 @@
 }
 
 .search-input {
-    width: 100%;
     padding: 8px 30px 8px 12px;
     border: 1px solid #ddd;
     border-radius: 4px;
@@ -429,4 +432,82 @@
 
 .dark .error-message {
     color: #ff6b6b;
+}
+/* Contrôles fixes en bas à droite */
+.refresh-controls {
+    padding: 10px;
+    position: absolute;
+    display: none;
+    flex-direction: row;
+    gap: 8px;
+    z-index: 1000;
+}
+
+.refresh-toggle,
+.manual-refresh {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    background-color: #1e1e1e;
+    border: 1px solid #333;
+    border-radius: 6px;
+    color: white;
+    cursor: pointer;
+    font-size: 14px;
+    transition: all 0.2s ease;
+    width: 200px; /* Largeur fixe pour aligner avec les boutons de section */
+}
+
+.refresh-toggle {
+    background-color: #1e1e1e;
+}
+
+.refresh-toggle.enabled {
+    background-color: #2563eb;
+    border-color: #2563eb;
+}
+
+.manual-refresh {
+    background-color: #1e1e1e;
+}
+
+.manual-refresh:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* Animations */
+.animate-spin {
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* Ajustement des boutons de section existants */
+.sections-control {
+    bottom: 20px;
+}
+
+/* Hover effects */
+.refresh-toggle:hover:not(:disabled),
+.manual-refresh:hover:not(:disabled) {
+    background-color: #2d2d2d;
+    transform: translateX(-5px);
+}
+
+/* Animation pour l'icône de rafraîchissement */
+.refresh-icon {
+    transition: transform 0.2s ease;
+}
+
+.refresh-icon.spinning {
+    animation: spin 1s linear infinite;
 }

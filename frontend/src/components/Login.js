@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import './Login.css';
-import LogoLight from '../assets/logo-light.png';
+import LogoDark from '../assets/logo-dark.png';
 
 const Login = () => {
     const [email, setEmail] = useState('');
@@ -40,7 +40,7 @@ const Login = () => {
     return (
         <div className="login-container">
             <div className="login-box">
-                <img src={LogoLight} alt="Eve-Prospect Logo" className="login-logo" />
+                <img src={LogoDark} alt="Eve-Prospect Logo" className="login-logo" />
                 <h2>Connexion</h2>
                 <p>Restez informé de votre monde professionnel</p>
                 {message && (
