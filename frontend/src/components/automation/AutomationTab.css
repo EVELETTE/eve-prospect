@@ -1,0 +1,356 @@
+:root {
+    /* Couleurs de base */
+    --primary: #0077B5;
+    --primary-hover: #005885;
+
+    /* Couleurs du thème clair */
+    --bg-primary: #ffffff;
+    --bg-secondary: #f9fafb;
+    --text-primary: #1a1a1a;
+    --text-secondary: #6b7280;
+    --border-color: #e5e7eb;
+    --card-bg: white;
+    --card-header-bg: #f9fafb;
+
+    /* Couleurs des statuts */
+    --status-active: #10B981;
+    --status-paused: #F59E0B;
+
+    /* Effets */
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+    --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.1);
+    --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.1);
+
+    /* Transitions */
+    --transition: all 0.2s ease;
+}
+
+.dark {
+    --bg-primary: #111827;
+    --bg-secondary: #1f2937;
+    --text-primary: #f3f4f6;
+    --text-secondary: #9ca3af;
+    --border-color: #374151;
+    --card-bg: #1f2937;
+    --card-header-bg: #111827;
+}
+
+.automation-container {
+    padding: 1.5rem;
+    background-color: var(--bg-primary);
+    transition: var(--transition);
+}
+
+/* Header */
+.sequence-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+}
+
+.sequence-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.create-sequence-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1.25rem;
+    background-color: var(--primary);
+    color: white;
+    border: none;
+    border-radius: 0.5rem;
+    font-weight: 500;
+    transition: var(--transition);
+}
+
+.create-sequence-btn:hover {
+    background-color: var(--primary-hover);
+    transform: translateY(-1px);
+}
+
+/* Templates */
+.templates-grid {
+    display: grid;
+    gap: 1rem;
+    margin-top: 1rem;
+}
+
+.template-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 0.75rem;
+    padding: 1.25rem;
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.template-card:hover {
+    border-color: var(--primary);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+}
+
+.template-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.75rem;
+}
+
+.template-name {
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.step-count {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    background: var(--bg-secondary);
+    padding: 0.25rem 0.75rem;
+    border-radius: 1rem;
+}
+
+.template-description {
+    color: var(--text-secondary);
+    margin-bottom: 1rem;
+    font-size: 0.875rem;
+}
+
+/* Timeline des étapes */
+.steps-timeline {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    padding: 0.75rem 0;
+    position: relative;
+}
+
+.steps-timeline::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 50%;
+    height: 2px;
+    background: var(--border-color);
+    z-index: 0;
+}
+
+.step-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem;
+    background: var(--card-bg);
+    border-radius: 0.5rem;
+    border: 1px solid var(--border-color);
+    z-index: 1;
+}
+
+.step-icon {
+    color: var(--primary);
+}
+
+.step-day {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+}
+
+/* Séquences actives */
+.sequence-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.sequence-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 0.75rem;
+    overflow: hidden;
+    transition: var(--transition);
+}
+
+.sequence-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 1.5rem;
+    background: var(--card-header-bg);
+    border-bottom: 1px solid var(--border-color);
+}
+
+.sequence-status {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.sequence-name {
+    color: var(--text-primary);
+    font-weight: 500;
+}
+
+.status-dot {
+    width: 0.5rem;
+    height: 0.5rem;
+    border-radius: 50%;
+}
+
+.status-dot.active {
+    background: var(--status-active);
+}
+
+.status-dot.paused {
+    background: var(--status-paused);
+}
+
+/* Actions */
+.sequence-actions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.action-button {
+    padding: 0.5rem;
+    border-radius: 0.375rem;
+    border: none;
+    background: transparent;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.action-button:hover {
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+}
+
+.action-button.delete:hover {
+    color: #EF4444;
+}
+
+/* Contenu des séquences */
+.sequence-body {
+    padding: 1.25rem 1.5rem;
+}
+
+.sequence-steps {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.sequence-step {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.75rem;
+    background: var(--bg-secondary);
+    border-radius: 0.5rem;
+    color: var(--text-secondary);
+    border: 1px solid var(--border-color);
+}
+
+.sequence-step.completed {
+    border-color: var(--status-active);
+    background: rgba(16, 185, 129, 0.1);
+}
+
+.step-content {
+    flex: 1;
+    font-size: 0.875rem;
+    color: var(--text-primary);
+}
+
+.step-date {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    color: var(--text-secondary);
+    font-size: 0.75rem;
+}
+
+/* État vide */
+.empty-state {
+    text-align: center;
+    padding: 3rem 1.5rem;
+    background: var(--bg-secondary);
+    border-radius: 0.75rem;
+    border: 1px solid var(--border-color);
+}
+
+.empty-icon {
+    width: 3rem;
+    height: 3rem;
+    margin: 0 auto 1rem;
+    color: var(--text-secondary);
+}
+
+.empty-title {
+    font-weight: 500;
+    color: var(--text-primary);
+    margin-bottom: 0.5rem;
+}
+
+.empty-description {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+}
+
+/* Chargement */
+.loading-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+    padding: 2rem;
+    color: var(--text-secondary);
+}
+
+.loading-spinner {
+    width: 2rem;
+    height: 2rem;
+    border: 2px solid var(--border-color);
+    border-top-color: var(--primary);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* Message d'erreur */
+.error-banner {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 1rem;
+    background: #FEE2E2;
+    color: #DC2626;
+    border-radius: 0.5rem;
+    margin-bottom: 1rem;
+}
+
+/* Responsive */
+@media (max-width: 640px) {
+    .automation-container {
+        padding: 1rem;
+    }
+
+    .sequence-card-header {
+        flex-direction: column;
+        gap: 1rem;
+    }
+
+    .sequence-actions {
+        width: 100%;
+        justify-content: flex-end;
+    }
+}

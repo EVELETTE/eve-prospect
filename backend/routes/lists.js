@@ -82,7 +82,8 @@ router.get('/:id', authenticate, async (req, res) => {
             userId: req.userId
         }).populate({
             path: 'prospects',
-            select: 'prenom nom email societe linkedin'
+            select: 'firstName lastName email company profileLink'
+            // Supprimez toute limitation ici si elle existe
         });
 
         if (!list) {
@@ -92,13 +93,23 @@ router.get('/:id', authenticate, async (req, res) => {
             });
         }
 
+        // Formater les prospects pour la réponse
+        const formattedProspects = list.prospects.map(prospect => ({
+            _id: prospect._id,
+            nom: prospect.lastName,
+            prenom: prospect.firstName,
+            email: prospect.email,
+            societe: prospect.company,
+            linkedin: prospect.profileLink
+        }));
+
         res.json({
             success: true,
             list: {
                 _id: list._id,
                 name: list.name,
-                prospects: list.prospects,
-                prospectsCount: list.prospects.length,
+                prospects: formattedProspects,
+                prospectsCount: formattedProspects.length,
                 updatedAt: list.updatedAt
             }
         });

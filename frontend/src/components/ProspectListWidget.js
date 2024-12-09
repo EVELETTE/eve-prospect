@@ -5,10 +5,9 @@ import axios from 'axios';
 import debounce from 'lodash/debounce';
 import { Search, RefreshCw, Clock, Upload, Trash2, Plus, Edit2, List, XCircle } from 'lucide-react';
 import './ProspectListWidget.css';
+import ProspectDetailModal from './ProspectDetailModal';
 
 const API_BASE_URL = 'http://localhost:5001/api';
-const ITEMS_PER_PAGE = 100;
-const LOAD_LIMIT = 100;    // Nombre d'éléments chargés avant d'attendre
 const REFRESH_INTERVAL = 10000; // 10 secondes
 
 const api = axios.create({
@@ -48,10 +47,13 @@ const ProspectListWidget = ({ prospects: initialProspects, onProspectsUpdate }) 
     const [lastUpdateTime, setLastUpdateTime] = useState(Date.now());
     const [isRefreshing, setIsRefreshing] = useState(false);
     const [autoRefreshEnabled, setAutoRefreshEnabled] = useState(true);
-    const [hasMore, setHasMore] = useState(true);
+    const [listProspects, setListProspects] = useState({});
+    const [selectedProspectDetails, setSelectedProspectDetails] = useState(null);
+    const [showProspectModal, setShowProspectModal] = useState(false);
+
+
 
     // ======= SECTION 2: MEMOS ET CALCULS =======
-    // Ces memos DOIVENT être déclarés AVANT les fonctions qui les utilisent
     const filteredLists = useMemo(() =>
             lists.filter(list =>
                 list.name.toLowerCase().includes(listSearchTerm.toLowerCase())
@@ -75,6 +77,12 @@ const ProspectListWidget = ({ prospects: initialProspects, onProspectsUpdate }) 
     }, [allProspects, searchTerm]);
 
     // ======= SECTION 3: FONCTIONS UTILITAIRES =======
+
+    const handleProspectClick = (prospect) => {
+        setSelectedProspectDetails(prospect);
+        setShowProspectModal(true);
+    };
+
     const debouncedSearch = useCallback(
         debounce((value) => {
             setSearchTerm(value);
@@ -95,15 +103,44 @@ const ProspectListWidget = ({ prospects: initialProspects, onProspectsUpdate }) 
                 : [...prev, id]
         );
     }, []);
-// ======= SECTION 4: FONCTIONS API =======
+
+    // ======= SECTION 4: FONCTIONS API =======
+    const fetchListProspects = async (listId) => {
+        try {
+            setLoading(true);
+            const response = await api.get(`/lists/${listId}`);
+            if (response.data.success && response.data.list) {
+                const prospects = response.data.list.prospects || [];
+                setListProspects(prev => ({
+                    ...prev,
+                    [listId]: prospects
+                }));
+                if (selectedList === listId) {
+                    setAllProspects(prospects);
+                    setDisplayedProspects(prospects);
+                }
+            }
+        } catch (error) {
+            handleError(error, "Erreur lors du chargement de la liste");
+        } finally {
+            setLoading(false);
+        }
+    };
+
     const fetchLists = useCallback(async () => {
         try {
             const response = await api.get('/lists');
             if (response.data.success) {
-                setLists(response.data.lists);
+                const listsData = response.data.lists || [];
+                setLists(listsData);
+
+                // Charger les prospects de chaque liste
+                await Promise.all(
+                    listsData.map(list => fetchListProspects(list._id))
+                );
             }
         } catch (error) {
-            handleError(error, "Erreur lors du chargement des listes de prospects");
+            handleError(error, "Erreur lors du chargement des listes");
         }
     }, [handleError]);
 
@@ -116,77 +153,58 @@ const ProspectListWidget = ({ prospects: initialProspects, onProspectsUpdate }) 
 
             let response;
             if (selectedList) {
-                response = await api.get(`/lists/${selectedList}`);
-                if (response.data.success) {
-                    const prospects = response.data.list.prospects;
-                    setAllProspects(prospects);
-                    setDisplayedProspects(prospects); // Affichez directement tous les prospects
-                    onProspectsUpdate(prospects);
+                const cachedProspects = listProspects[selectedList];
+                if (cachedProspects) {
+                    setAllProspects(cachedProspects);
+                    setDisplayedProspects(cachedProspects);
                     setLastUpdateTime(Date.now());
+                } else {
+                    await fetchListProspects(selectedList);
                 }
             } else {
                 response = await api.get('/prospects');
                 if (response.data.success) {
-                    setAllProspects(response.data.prospects);
-                    setDisplayedProspects(response.data.prospects); // Affichez directement tous les prospects
-                    onProspectsUpdate(response.data.prospects);
+                    const prospects = response.data.prospects || [];
+                    setAllProspects(prospects);
+                    setDisplayedProspects(prospects);
                     setLastUpdateTime(Date.now());
                 }
             }
         } catch (error) {
             handleError(error, "Erreur lors du chargement des prospects");
+            setAllProspects([]);
+            setDisplayedProspects([]);
         } finally {
             setLoading(false);
             setIsRefreshing(false);
         }
-    }, [selectedList, handleError, onProspectsUpdate, autoRefreshEnabled]);
+    }, [selectedList, autoRefreshEnabled, listProspects, handleError]);
 
-    // ======= SECTION 5: GESTION DU SCROLL INFINI =======
-    const loadMoreProspects = useCallback(async () => {
-        const startIndex = displayedProspects.length;
-
-        if (startIndex >= filteredProspects.length) {
-            setHasMore(false);
-            return;
-        }
-
-        setLoadingMore(true);
+    const handleListChange = async (listId) => {
+        setSelectedList(listId);
+        setLoading(true);
         try {
-            // Charge les prospects en lot de 20
-            const newProspects = filteredProspects.slice(startIndex, startIndex + ITEMS_PER_PAGE);
-            setDisplayedProspects(prev => [...prev, ...newProspects]);
-
-            // Vérifie si la limite de 100 est atteinte
-            const loadedCount = startIndex + ITEMS_PER_PAGE;
-            if (loadedCount % LOAD_LIMIT === 0) {
-                console.log(`Chargé ${loadedCount} prospects, en attente avant de continuer...`);
-                await new Promise(resolve => setTimeout(resolve, 2000)); // Attente de 2 secondes
+            if (listId === null) {
+                const response = await api.get('/prospects');
+                if (response.data.success) {
+                    const prospects = response.data.prospects || [];
+                    setAllProspects(prospects);
+                    setDisplayedProspects(prospects);
+                }
+            } else if (listProspects[listId]) {
+                setAllProspects(listProspects[listId]);
+                setDisplayedProspects(listProspects[listId]);
+            } else {
+                await fetchListProspects(listId);
             }
-
-            setHasMore(loadedCount < filteredProspects.length);
+        } catch (error) {
+            handleError(error, "Erreur lors du changement de liste");
+            setAllProspects([]);
+            setDisplayedProspects([]);
         } finally {
-            setLoadingMore(false);
+            setLoading(false);
         }
-    }, [displayedProspects.length, filteredProspects]);
-
-    const handleScroll = useCallback((e) => {
-        if (!hasMore || loadingMore) return;
-
-        const element = e.target;
-        if (element.scrollHeight - element.scrollTop === element.clientHeight) {
-            loadMoreProspects();
-        }
-    }, [hasMore, loadingMore, loadMoreProspects]);
-
-    useEffect(() => {
-        if (!loading && !loadingMore) {
-            // Au lieu de limiter, affichez tous les prospects filtrés
-            setDisplayedProspects(filteredProspects);
-            setHasMore(false); // Désactive le chargement progressif
-        }
-    }, [filteredProspects, loading, loadingMore]);
-
-    // ======= SECTION 6: GESTION DES PROSPECTS =======
+    };// ======= SECTION 5: GESTION DES PROSPECTS =======
     const handleFileUpload = async (data) => {
         try {
             setLoading(true);
@@ -233,7 +251,9 @@ const ProspectListWidget = ({ prospects: initialProspects, onProspectsUpdate }) 
         } finally {
             setLoading(false);
         }
-    };// ======= SECTION 7: GESTION DES LISTES =======
+    };
+
+    // ======= SECTION 6: GESTION DES LISTES =======
     const createNewList = async (e) => {
         e.preventDefault();
         if (newListName.trim() === '') return;
@@ -294,6 +314,12 @@ const ProspectListWidget = ({ prospects: initialProspects, onProspectsUpdate }) 
                     setSelectedList(null);
                     await fetchProspects();
                 }
+                // Supprimer les prospects en cache pour cette liste
+                setListProspects(prev => {
+                    const newState = { ...prev };
+                    delete newState[listId];
+                    return newState;
+                });
             }
         } catch (error) {
             handleError(error, "Erreur lors de la suppression de la liste");
@@ -310,7 +336,8 @@ const ProspectListWidget = ({ prospects: initialProspects, onProspectsUpdate }) 
             });
 
             if (response.data.success) {
-                await fetchLists();
+                // Mettre à jour le cache de la liste
+                await fetchListProspects(listId);
                 setShowAddToListModal(false);
                 setSelectedProspects([]);
                 if (selectedList === listId) {
@@ -324,14 +351,12 @@ const ProspectListWidget = ({ prospects: initialProspects, onProspectsUpdate }) 
         }
     };
 
-    // ======= SECTION 8: EFFETS =======
+    // ======= SECTION 7: EFFETS =======
     useEffect(() => {
-        if (!loading && !loadingMore) {
-            const filtered = filteredProspects.slice(0, ITEMS_PER_PAGE);
-            setDisplayedProspects(filtered);
-            setHasMore(filteredProspects.length > ITEMS_PER_PAGE);
+        if (!loading) {
+            setDisplayedProspects(filteredProspects);
         }
-    }, [filteredProspects, loading, loadingMore]);
+    }, [filteredProspects, loading]);
 
     useEffect(() => {
         const intervalId = setInterval(() => {
@@ -347,9 +372,9 @@ const ProspectListWidget = ({ prospects: initialProspects, onProspectsUpdate }) 
 
     useEffect(() => {
         fetchProspects();
-    }, [fetchProspects, selectedList]);
+    }, [fetchProspects]);
 
-    // ======= SECTION 9: RENDU DU COMPOSANT =======
+    // ======= SECTION 8: RENDU DU COMPOSANT =======
     return (
         <div className="prospect-list-widget">
             <div className="list-header">
@@ -386,16 +411,13 @@ const ProspectListWidget = ({ prospects: initialProspects, onProspectsUpdate }) 
                 />
                 <ul className="list-names">
                     <li
-                        onClick={() => {
-                            setSelectedList(null);
-                            fetchProspects();
-                        }}
+                        onClick={() => handleListChange(null)}
                         className={`list-item ${!selectedList ? 'active' : ''}`}
                     >
                         <div className="list-item-content">
                             <List className="w-4 h-4" />
                             <span className="list-name">Tous les prospects</span>
-                            <span className="list-count">({allProspects.length})</span>
+                            <span className="list-count">({displayedProspects.length})</span>
                         </div>
                     </li>
                     {filteredLists.map(list => (
@@ -405,15 +427,12 @@ const ProspectListWidget = ({ prospects: initialProspects, onProspectsUpdate }) 
                         >
                             <div
                                 className="list-item-content"
-                                onClick={() => {
-                                    setSelectedList(list._id);
-                                    fetchProspects();
-                                }}
+                                onClick={() => handleListChange(list._id)}
                             >
                                 <List className="w-4 h-4" />
                                 <span className="list-name">{list.name}</span>
                                 <span className="list-count">
-                                    ({list.prospectsCount || 0})
+                                    ({listProspects[list._id]?.length || 0})
                                 </span>
                             </div>
                             <div className="list-actions">
@@ -491,10 +510,7 @@ const ProspectListWidget = ({ prospects: initialProspects, onProspectsUpdate }) 
                     </div>
                 </div>
 
-                <div
-                    className={`prospect-content ${showImportModal ? 'dimmed' : ''}`}
-                    onScroll={handleScroll}
-                >
+                <div className={`prospect-content ${showImportModal ? 'dimmed' : ''}`}>
                     {loading && !isRefreshing ? (
                         <div className="loading">Chargement...</div>
                     ) : (
@@ -534,7 +550,7 @@ const ProspectListWidget = ({ prospects: initialProspects, onProspectsUpdate }) 
                                     </tr>
                                 ) : (
                                     displayedProspects.map((prospect) => (
-                                        <tr key={prospect._id}>
+                                        <tr key={prospect._id} className="prospect-row" onClick={() => handleProspectClick(prospect)}>
                                             <td>
                                                 <input
                                                     type="checkbox"
@@ -581,7 +597,7 @@ const ProspectListWidget = ({ prospects: initialProspects, onProspectsUpdate }) 
                             onFileLoaded={handleFileUpload}
                             cssClass="csv-reader-input"
                             label="Importer une liste CSV"
-                            parserOptions={{header: false}}
+                            parserOptions={{ header: false }}
                         />
                         <div className="modal-actions">
                             <button
@@ -638,13 +654,22 @@ const ProspectListWidget = ({ prospects: initialProspects, onProspectsUpdate }) 
                 </div>
             )}
 
+            {/* Ajoutez cela juste avant la dernière balise fermante du composant */}
+            {showProspectModal && selectedProspectDetails && (
+                <ProspectDetailModal
+                    prospect={selectedProspectDetails}
+                    isOpen={showProspectModal}
+                    onClose={() => setShowProspectModal(false)}
+                />
+            )}
+
             {showEditListModal && (
                 <div className="modal">
                     <div className="modal-content">
                         <h3>Modifier la liste</h3>
                         <form onSubmit={handleEditList}>
                             <div className="modal-body">
-                            <input
+                                <input
                                     type="text"
                                     placeholder="Nom de la liste"
                                     value={editListName}

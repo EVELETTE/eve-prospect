@@ -49,6 +49,12 @@ const authRoutes = require('./routes/auth');
 const prospectRoutes = require('./routes/prospects');
 const listsRoutes = require('./routes/lists');
 const notificationsRoutes = require('./routes/notifications');
+const campaignRoutes = require('./routes/campaigns');
+const sequenceRoutes = require('./routes/sequences');
+const automationRoutes = require('./routes/automation');
+const sequenceProcessor = require('./services/SequenceProcessor');
+
+
 
 // Déclaration des routes API
 app.use('/api/auth', authRoutes); // Gestion de l'authentification
@@ -56,6 +62,9 @@ app.use('/api/prospects', prospectRoutes); // Gestion des prospects
 app.use('/uploads', express.static(path.join(__dirname, 'uploads'))); // Accès aux fichiers statiques
 app.use('/api/lists', listsRoutes); // Gestion des listes
 app.use('/api/notifications', notificationsRoutes); // Gestion des notifications
+app.use('/api/campaigns', campaignRoutes);
+app.use('/api/sequences', sequenceRoutes);
+app.use('/api/automation', automationRoutes);
 
 // Middleware pour gérer les erreurs globales
 app.use((error, req, res, next) => {
@@ -67,6 +76,8 @@ app.use((error, req, res, next) => {
         timestamp: new Date().toISOString()
     });
 });
+
+sequenceProcessor.startProcessing();
 
 // Démarrage du serveur sur le port défini dans les variables d'environnement ou sur le port 5001 par défaut
 const PORT = process.env.PORT || 5001;

@@ -1,29 +1,42 @@
 import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import './Dashboard.css';
-import Settings from './Settings'
+import Settings from './Settings';
 import LogoLight from '../assets/logo-light.png';
 import LogoDark from '../assets/logo-dark.png';
 import StatCard from './StatCard';
 import ProspectListWidget from './ProspectListWidget';
 import NotificationCenter from './NotificationCenter';
-import {
-    Chart as ChartJS,
-    LineElement,
-    PointElement,
-    LineController,
-    CategoryScale,
-    LinearScale,
-    Title,
-    Tooltip,
-    Legend
-} from 'chart.js';
-import { Line } from 'react-chartjs-2';
+import CreateCampaignModal from './CreateCampaignModal';
+import { useTheme } from '../hooks/useTheme';
+import DashboardStats from './DashboardStats';
 
-ChartJS.register(LineElement, PointElement, LineController, CategoryScale, LinearScale, Title, Tooltip, Legend);
+import {
+    Home,
+    FileText,
+    Users,
+    Package,
+    MessageCircle,
+    Settings as SettingsIcon,
+    HelpCircle,
+    LogOut,
+    Sun,
+    Moon,
+    Bell,
+    RefreshCw,
+    Search
+} from 'lucide-react';
+
+const NavItem = ({ icon, label, active, badge }) => (
+    <div className={`nav-item ${active ? 'active' : ''}`}>
+        <span className="nav-icon">{icon}</span>
+        <span className="nav-label">{label}</span>
+        {badge && <span className="badge">{badge}</span>}
+    </div>
+);
 
 const Dashboard = () => {
-    // États
+    const { isDarkMode, toggleTheme } = useTheme();
     const [userData, setUserData] = useState({
         firstName: '',
         lastName: '',
@@ -34,20 +47,95 @@ const Dashboard = () => {
     const [error, setError] = useState(null);
     const [showMenu, setShowMenu] = useState(false);
     const [showSettings, setShowSettings] = useState(false);
-    const [isDarkTheme, setIsDarkTheme] = useState(true);
-    const [selectedStat, setSelectedStat] = useState("Prospects ajoutés");
     const [prospects, setProspects] = useState([]);
     const [showProspects, setShowProspects] = useState(true);
     const [showStats, setShowStats] = useState(true);
+    const [showCampaignModal, setShowCampaignModal] = useState(false);
+    const [campaigns, setCampaigns] = useState([]);
     const menuRef = useRef(null);
 
-    // Chargement initial des données
+    // API calls
+    const api = axios.create({
+        baseURL: 'http://localhost:5001/api',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+    });
+
+    const fetchCampaigns = async () => {
+        try {
+            const response = await api.get('/campaigns');
+            if (response.data.success) {
+                setCampaigns(response.data.campaigns);
+            }
+        } catch (error) {
+            console.error("Erreur chargement campagnes:", error);
+        }
+    };
+
+    const fetchUserData = async () => {
+        try {
+            const response = await api.get('/auth/user');
+            if (response.data) {
+                setUserData({
+                    firstName: response.data.firstName || '',
+                    lastName: response.data.lastName || '',
+                    email: response.data.email || '',
+                    avatar: response.data.avatar
+                });
+            }
+        } catch (error) {
+            console.error('Erreur récupération données:', error);
+            if (error.response?.status === 401) {
+                handleLogout();
+            }
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const fetchProspects = async () => {
+        try {
+            const response = await api.get('/prospects');
+            if (response.data.success) {
+                setProspects(response.data.prospects);
+            }
+        } catch (error) {
+            console.error("Erreur chargement prospects:", error);
+        }
+    };
+
+    const handleLogout = () => {
+        localStorage.removeItem('token');
+        window.location.href = '/login';
+    };
+
+    const handleRefreshData = async () => {
+        setLoading(true);
+        await Promise.all([fetchUserData(), fetchProspects()]);
+        setLoading(false);
+    };
+
+    const toggleMenu = () => setShowMenu(!showMenu);
+
+    const handleShowSettings = () => {
+        setShowSettings(true);
+        setShowMenu(false);
+    };
+
     useEffect(() => {
+        const token = localStorage.getItem('token');
+        if (!token) {
+            window.location.href = '/login';
+            return;
+        }
+
         fetchUserData();
         fetchProspects();
+        fetchCampaigns();
     }, []);
 
-    // Gestion du clic en dehors du menu
     useEffect(() => {
         const handleClickOutside = (event) => {
             if (menuRef.current && !menuRef.current.contains(event.target)) {
@@ -59,187 +147,139 @@ const Dashboard = () => {
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
 
-    // Récupération des données utilisateur
-    const fetchUserData = async () => {
-        try {
-            const token = localStorage.getItem('token');
-            if (!token) {
-                console.log('❌ Aucun token trouvé');
-                window.location.href = '/login';
-                return;
-            }
+    if (loading) {
+        return (
+            <div className="loading-screen">
+                <div className="loading-spinner" />
+                <p>Chargement du tableau de bord...</p>
+            </div>
+        );
+    }
 
-            const response = await axios.get('http://localhost:5001/api/auth/user', {
-                headers: {
-                    Authorization: `Bearer ${token}`
-                }
-            });
-
-            if (response.data) {
-                const userData = {
-                    firstName: response.data.firstName || '',
-                    lastName: response.data.lastName || '',
-                    email: response.data.email || '',
-                    avatar: response.data.avatar
-                };
-                setUserData(userData);
-            }
-        } catch (error) {
-            console.error('❌ Erreur lors de la récupération des données:', error);
-            if (error.response?.status === 401) {
-                localStorage.removeItem('token');
-                window.location.href = '/login';
-            }
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    // Récupération des prospects
-    const fetchProspects = async () => {
-        try {
-            const response = await axios.get('http://localhost:5001/api/prospects', {
-                headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-            });
-
-            if (response.data.success) {
-                setProspects(response.data.prospects);
-            }
-        } catch (error) {
-            console.error("❌ Erreur chargement prospects:", error);
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    // Handlers
-    const toggleMenu = () => setShowMenu(!showMenu);
-    const handleShowSettings = () => {
-        setShowSettings(true);
-        setShowMenu(false);
-    };
-    const handleLogout = () => {
-        localStorage.removeItem('token');
-        window.location.href = '/login';
-    };
-    const handleRefreshData = async () => {
-        setLoading(true);
-        await Promise.all([fetchUserData(), fetchProspects()]);
-        setLoading(false);
-    };
-
-    // Configuration du graphique
-    const chartData = {
-        labels: ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"],
-        datasets: [{
-            label: selectedStat,
-            data: prospects.length ? Array(7).fill(prospects.length) : Array(7).fill(0),
-            borderColor: '#0077B5',
-            backgroundColor: 'rgba(0, 119, 181, 0.1)',
-            fill: true,
-            tension: 0.4
-        }]
-    };
-
-    if (loading) return <div className="loading">🔄 Chargement...</div>;
-    if (error) return <div className="error">❌ {error}</div>;
+    if (error) {
+        return (
+            <div className="error-screen">
+                <p>{error}</p>
+                <button onClick={handleRefreshData} className="retry-button">
+                    Réessayer
+                </button>
+            </div>
+        );
+    }
 
     return (
-        <div className={`dashboard-container ${isDarkTheme ? 'dark' : ''}`}>
-            <header className="dashboard-header">
-                <img src={isDarkTheme ? LogoDark : LogoLight} alt="Logo" className="dashboard-logo" />
-                <div className="header-actions">
-                    <button className="start-campaign-btn">
-                        Démarrer une campagne
-                    </button>
-                    {/* Remplacement de l'ancien composant de notification par le nouveau NotificationCenter */}
-                    <NotificationCenter />
-                    <div className="user-profile" onClick={toggleMenu} ref={menuRef}>
-                        <img
-                            src={userData.avatar}
-                            alt="Avatar"
-                            className="header-user-avatar"
-                            onError={(e) => {
-                                e.target.src = `https://ui-avatars.com/api/?name=${userData.firstName}+${userData.lastName}&background=random`;
-                            }}
-                        />
-                        <span className="user-name">
-                            {userData.firstName} {userData.lastName}
-                        </span>
-                        <span className="dropdown-icon">▼</span>
-                        {showMenu && (
-                            <div className="dropdown-menu">
-                                <button className="menu-item" onClick={handleShowSettings}>
-                                    ⚙️ Paramètres
-                                </button>
-                                <button className="menu-item" onClick={handleRefreshData}>
-                                    🔄 Rafraîchir
-                                </button>
-                                <button
-                                    className="menu-item theme-toggle"
-                                    onClick={() => setIsDarkTheme(!isDarkTheme)}
-                                >
-                                    {isDarkTheme ? '☀️ Mode clair' : '🌙 Mode sombre'}
-                                </button>
-                                <button className="menu-item logout" onClick={handleLogout}>
-                                    🚪 Déconnexion
-                                </button>
-                            </div>
-                        )}
-                    </div>
+        <div className={`dashboard-layout ${isDarkMode ? 'dark' : ''}`}>
+            {/* Sidebar */}
+            <aside className="sidebar">
+                <div className="logo-container">
+                    <img src={isDarkMode ? LogoDark : LogoLight} alt="Logo" className="logo" />
                 </div>
-            </header>
 
-            <div className="dashboard-content">
+                <nav className="nav-menu">
+                    <NavItem icon={<Home size={20} />} label="Dashboard" active />
+                    <NavItem icon={<Users size={20} />} label="Prospects" />
+                    <NavItem icon={<FileText size={20} />} label="Campaigns" />
+                    <NavItem icon={<MessageCircle size={20} />} label="Messages" badge="2" />
+                    <NavItem icon={<Package size={20} />} label="Products" />
+                    <NavItem icon={<SettingsIcon size={20} />} label="Settings" />
+                    <NavItem icon={<HelpCircle size={20} />} label="Help" />
+                </nav>
+
+                <button className="logout-button" onClick={handleLogout}>
+                    <LogOut size={20} />
+                    <span>Log Out</span>
+                </button>
+            </aside>
+
+            {/* Main Content */}
+            <main className="main-content">
                 {showSettings ? (
                     <Settings onBack={() => setShowSettings(false)} userData={userData} />
                 ) : (
                     <>
-                        {showProspects && (
-                            <section className="prospects-section" key="prospects">
-                                <h3>👥 Gestion des Prospects</h3>
-                                <ProspectListWidget
-                                    prospects={prospects}
-                                    onProspectsUpdate={setProspects}
-                                    onRefresh={handleRefreshData}
+                        {/* Header */}
+                        <header className="main-header">
+                            <div className="search-container">
+                                <Search className="search-icon" size={20} />
+                                <input
+                                    type="text"
+                                    placeholder="Search..."
+                                    className="search-input"
                                 />
-                            </section>
-                        )}
+                            </div>
 
-                        {showStats && (
-                            <section className="statistics" key="stats">
-                                <h3>📊 Statistiques</h3>
-                                <div className="stat-box">
-                                    <StatCard
-                                        icon="👥"
-                                        value={prospects.length}
-                                        label="Prospects ajoutés"
-                                        color="#0077B5"
+                            <div className="header-actions">
+                                <button
+                                    className="campaign-button"
+                                    onClick={() => setShowCampaignModal(true)}
+                                >
+                                    Démarrer une campagne
+                                </button>
+                                <NotificationCenter />
+                                <div className="user-profile" onClick={toggleMenu} ref={menuRef}>
+                                    <img
+                                        src={userData.avatar}
+                                        alt="Avatar"
+                                        className="user-avatar"
+                                        onError={(e) => {
+                                            e.target.src = `https://ui-avatars.com/api/?name=${userData.firstName}+${userData.lastName}&background=random`;
+                                        }}
                                     />
-                                    <StatCard
-                                        icon="📨"
-                                        value={Math.round(prospects.length * 1.5)}
-                                        label="Invitations envoyées"
-                                        color="#00A0DC"
-                                    />
-                                    <StatCard
-                                        icon="✉️"
-                                        value={Math.round(prospects.length * 0.8)}
-                                        label="Messages envoyés"
-                                        color="#0066FF"
-                                    />
-                                    <StatCard
-                                        icon="🤝"
-                                        value={Math.round(prospects.length * 0.6)}
-                                        label="Connexions réalisées"
-                                        color="#0A66C2"
-                                    />
-                                </div>
+                                    <div className="user-info">
+                                        <span className="user-name">
+                                            {userData.firstName} {userData.lastName}
+                                        </span>
+                                        <span className="user-role">Sales Admin</span>
+                                    </div>
 
-                                <div className="stat-chart">
-                                    <Line data={chartData} />
+                                    {showMenu && (
+                                        <div className="user-menu">
+                                            <button className="menu-item" onClick={handleShowSettings}>
+                                                <SettingsIcon size={16} />
+                                                Paramètres
+                                            </button>
+                                            <button className="menu-item" onClick={handleRefreshData}>
+                                                <RefreshCw size={16} />
+                                                Rafraîchir
+                                            </button>
+                                            <button className="menu-item" onClick={toggleTheme}>
+                                                {isDarkMode ? <Sun size={16} /> : <Moon size={16} />}
+                                                {isDarkMode ? 'Mode clair' : 'Mode sombre'}
+                                            </button>
+                                            <button className="menu-item logout" onClick={handleLogout}>
+                                                <LogOut size={16} />
+                                                Déconnexion
+                                            </button>
+                                        </div>
+                                    )}
                                 </div>
-                            </section>
+                            </div>
+                        </header>
+
+                        <div className="dashboard-sections">
+                            {showStats && (
+                                <section className="statistics">
+                                    <DashboardStats prospects={prospects} />
+                                </section>
+                            )}
+
+                            {showProspects && (
+                                <section className="prospects-section">
+                                    <h3>👥 Gestion des Prospects</h3>
+                                    <ProspectListWidget
+                                        prospects={prospects}
+                                        onProspectsUpdate={setProspects}
+                                        onRefresh={handleRefreshData}
+                                    />
+                                </section>
+                            )}
+                        </div>
+
+                        {showCampaignModal && (
+                            <CreateCampaignModal
+                                onClose={() => setShowCampaignModal(false)}
+                                onSuccess={fetchCampaigns}
+                            />
                         )}
 
                         <div className="sections-control">
@@ -260,7 +300,7 @@ const Dashboard = () => {
                         </div>
                     </>
                 )}
-            </div>
+            </main>
         </div>
     );
 };

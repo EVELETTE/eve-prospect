@@ -89,6 +89,19 @@
     margin-bottom: 15px;
     flex-wrap: wrap;
 }
+.prospect-row {
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.prospect-row:hover {
+    background-color: rgba(255, 255, 255, 0.05);
+}
+
+/* Pour éviter que le clic sur les boutons déclenche l'ouverture de la modal */
+.prospect-row button {
+    pointer-events: none;
+}
 
 /* Boutons */
 .btn {

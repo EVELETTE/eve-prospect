@@ -184,7 +184,8 @@ router.post('/batch', authenticate, async (req, res) => {
 // Récupération des prospects
 router.get('/', authenticate, async (req, res) => {
     try {
-        const { page = 1, limit = 50, status, source, search } = req.query;
+        // Modifier cette ligne pour augmenter la limite par défaut
+        const { page = 1, limit = 1000, status, source, search } = req.query;
         const query = { userId: req.userId };
 
         // Application des filtres
@@ -198,11 +199,12 @@ router.get('/', authenticate, async (req, res) => {
             ];
         }
 
-        // Récupération avec pagination
+        // Récupération avec une limite plus élevée
         const prospects = await Prospect.find(query)
-            .sort({ createdAt: -1 })
-            .skip((page - 1) * limit)
-            .limit(parseInt(limit));
+            .sort({ createdAt: -1 });
+        // Supprimez ces lignes pour retirer la pagination
+        // .skip((page - 1) * limit)
+        // .limit(parseInt(limit));
 
         const total = await Prospect.countDocuments(query);
 

@@ -35,6 +35,30 @@ const upload = multer({
     cb(new Error('❌ Seules les images sont autorisées!'));
   }
 });
+
+const encrypt = (text) => {
+  const iv = crypto.randomBytes(16);
+  const cipher = crypto.createCipheriv('aes-256-cbc', Buffer.from(process.env.ENCRYPTION_KEY, 'base64'), iv);
+  let encrypted = cipher.update(text);
+  encrypted = Buffer.concat([encrypted, cipher.final()]);
+  return iv.toString('hex') + ':' + encrypted.toString('hex');
+};
+
+const decrypt = (text) => {
+  try {
+    const [ivHex, encryptedHex] = text.split(':');
+    const iv = Buffer.from(ivHex, 'hex');
+    const encryptedText = Buffer.from(encryptedHex, 'hex');
+    const decipher = crypto.createDecipheriv('aes-256-cbc', Buffer.from(process.env.ENCRYPTION_KEY, 'base64'), iv);
+    let decrypted = decipher.update(encryptedText);
+    decrypted = Buffer.concat([decrypted, decipher.final()]);
+    return decrypted.toString();
+  } catch (error) {
+    console.error('Erreur de déchiffrement:', error);
+    return null;
+  }
+};
+
 // 🔍 Route de vérification du token
 router.get('/user', authenticate, async (req, res) => {
   try {
@@ -337,6 +361,117 @@ router.post('/register', async (req, res) => {
   } catch (error) {
     console.error('❌ Erreur d\'inscription:', error);
     res.status(500).json({ success: false, message: '❌ Erreur serveur' });
+  }
+});
+
+// Route pour récupérer les credentials LinkedIn
+router.get('/linkedin-credentials', authenticate, async (req, res) => {
+  try {
+    const user = await User.findById(req.userId);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'Utilisateur non trouvé'
+      });
+    }
+
+    let email = '';
+    if (user.linkedinCredentials?.email) {
+      email = decrypt(user.linkedinCredentials.email);
+    }
+
+    res.json({
+      success: true,
+      email,
+      isConnected: !!user.linkedinCredentials?.isConnected
+    });
+  } catch (error) {
+    console.error('Erreur récupération credentials:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Erreur serveur'
+    });
+  }
+});
+
+// Route pour mettre à jour les credentials LinkedIn
+router.post('/update-linkedin-credentials', authenticate, async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    const user = await User.findById(req.userId);
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'Utilisateur non trouvé'
+      });
+    }
+
+    // Initialiser les credentials s'ils n'existent pas
+    if (!user.linkedinCredentials) {
+      user.linkedinCredentials = {};
+    }
+
+    // Mettre à jour uniquement les champs fournis
+    if (email) {
+      user.linkedinCredentials.email = encrypt(email);
+    }
+    if (password) {
+      user.linkedinCredentials.password = encrypt(password);
+    }
+
+    user.linkedinCredentials.isConnected = false; // Réinitialiser le statut de connexion
+    user.linkedinCredentials.lastCheck = new Date();
+
+    await user.save();
+
+    res.json({
+      success: true,
+      message: 'Credentials LinkedIn mis à jour avec succès'
+    });
+  } catch (error) {
+    console.error('Erreur mise à jour credentials:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Erreur serveur'
+    });
+  }
+});
+
+// Route pour tester la connexion LinkedIn
+router.post('/test-linkedin-connection', authenticate, async (req, res) => {
+  try {
+    const user = await User.findById(req.userId);
+    if (!user?.linkedinCredentials?.email || !user?.linkedinCredentials?.password) {
+      return res.status(400).json({
+        success: false,
+        message: 'Credentials LinkedIn manquants'
+      });
+    }
+
+    const email = decrypt(user.linkedinCredentials.email);
+    const password = decrypt(user.linkedinCredentials.password);
+
+    const isValid = true; // À remplacer par la vérification réelle avec le bot
+
+    await User.findByIdAndUpdate(req.userId, {
+      $set: {
+        'linkedinCredentials.isConnected': isValid,
+        'linkedinCredentials.lastCheck': new Date()
+      }
+    }, { new: true, runValidators: true });
+
+    res.json({
+      success: true,
+      isConnected: isValid,
+      message: isValid ? 'Connexion LinkedIn réussie' : 'Échec de la connexion'
+    });
+  } catch (error) {
+    console.error('Erreur test connexion:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Erreur serveur'
+    });
   }
 });
 
