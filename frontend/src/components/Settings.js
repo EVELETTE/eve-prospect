@@ -1,9 +1,9 @@
+// Settings.js
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import './Settings.css';
 
-const Settings = ({ onBack }) => {
-    const [activeTab, setActiveTab] = useState('profile');
+const Settings = () => {
+    // États
     const [userData, setUserData] = useState({
         firstName: '',
         lastName: '',
@@ -21,18 +21,28 @@ const Settings = ({ onBack }) => {
     const [message, setMessage] = useState({ text: '', type: '' });
     const [loading, setLoading] = useState(true);
     const [originalEmail, setOriginalEmail] = useState('');
+    const [testingConnection, setTestingConnection] = useState(false);
+    const [lastCheckTime, setLastCheckTime] = useState(null);
 
+    // Référence pour l'input file
+    const fileInputRef = React.createRef();
+
+    // Effets
     useEffect(() => {
         fetchUserData();
         fetchLinkedinCredentials();
     }, []);
 
-    // 🔄 Fonction pour obtenir les données utilisateur
+    // Fonctions
+    const showMessage = (text, type) => {
+        setMessage({ text, type });
+        setTimeout(() => setMessage({ text: '', type: '' }), 3000);
+    };
+
     const fetchUserData = async () => {
         try {
             const token = localStorage.getItem('token');
             if (!token) {
-                console.log('❌ Aucun token trouvé');
                 window.location.href = '/login';
                 return;
             }
@@ -51,7 +61,6 @@ const Settings = ({ onBack }) => {
                 setOriginalEmail(response.data.email || '');
             }
         } catch (error) {
-            console.error('❌ Erreur:', error);
             if (error.response?.status === 401) {
                 localStorage.removeItem('token');
                 window.location.href = '/login';
@@ -61,7 +70,6 @@ const Settings = ({ onBack }) => {
         }
     };
 
-    // 🔄 Fonction pour obtenir les credentials LinkedIn
     const fetchLinkedinCredentials = async () => {
         try {
             const response = await axios.get('http://localhost:5001/api/auth/linkedin-credentials', {
@@ -76,11 +84,10 @@ const Settings = ({ onBack }) => {
                 });
             }
         } catch (error) {
-            console.error('❌ Erreur credentials LinkedIn:', error);
+            showMessage('Erreur lors de la récupération des identifiants LinkedIn', 'error');
         }
     };
 
-    // 📧 Update email
     const handleEmailUpdate = async () => {
         try {
             const response = await axios.put(
@@ -88,84 +95,147 @@ const Settings = ({ onBack }) => {
                 { email: userData.email },
                 {
                     headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${localStorage.getItem('token')}`
+                        Authorization: `Bearer ${localStorage.getItem('token')}`
                     }
                 }
             );
 
             if (response.data.success) {
-                showMessage('✅ Email mis à jour avec succès', 'success');
+                showMessage('Email mis à jour avec succès', 'success');
                 setIsEditingEmail(false);
                 setOriginalEmail(userData.email);
             }
         } catch (error) {
-            showMessage(error.response?.data?.message || '❌ Erreur', 'error');
+            showMessage(error.response?.data?.message || 'Erreur', 'error');
             setUserData(prev => ({ ...prev, email: originalEmail }));
         }
     };
 
-    // 🔗 Update LinkedIn Credentials
     const updateLinkedinCredentials = async (type) => {
         try {
+            const credential = linkedinCredentials[type];
+            if (!credential || credential === '••••••••') {
+                showMessage('Veuillez entrer une valeur valide', 'error');
+                return;
+            }
+
             const response = await axios.post(
                 'http://localhost:5001/api/auth/update-linkedin-credentials',
-                { [type]: linkedinCredentials[type] },
+                { [type]: credential },
                 {
                     headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${localStorage.getItem('token')}`
+                        Authorization: `Bearer ${localStorage.getItem('token')}`
                     }
                 }
             );
 
             if (response.data.success) {
-                showMessage('✅ Paramètres LinkedIn mis à jour', 'success');
+                showMessage('Identifiants LinkedIn mis à jour', 'success');
                 if (type === 'email') setIsEditingLinkedinEmail(false);
                 if (type === 'password') setIsEditingLinkedinPassword(false);
+                setLinkedinCredentials(prev => ({
+                    ...prev,
+                    isConnected: false
+                }));
             }
         } catch (error) {
-            showMessage('❌ Erreur mise à jour LinkedIn', 'error');
+            showMessage(error.response?.data?.message || 'Erreur', 'error');
         }
     };
 
-    // 🔄 Test LinkedIn Connection
+    //  Test LinkedIn Connection
+
     const testLinkedinConnection = async () => {
         try {
-            setLoading(true);
-            const response = await axios.post(
-                'http://localhost:5001/api/auth/test-linkedin-connection',
+            setTestingConnection(true);
+
+            // Vérifier d'abord si les credentials sont présents
+            if (!linkedinCredentials.email || !linkedinCredentials.password) {
+                showMessage('❌ Veuillez d\'abord configurer vos identifiants LinkedIn', 'error');
+                return;
+            }
+
+            const token = localStorage.getItem('token');
+
+            // Premier appel pour vérifier/créer la session du bot
+            await axios.post(
+                'http://localhost:5001/api/linkedin/initialize-bot',
                 {},
                 {
-                    headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                }
+            );
+
+            // Deuxième appel pour tester la connexion
+            const response = await axios.post(
+                'http://localhost:5001/api/linkedin/test-connection',
+                {},
+                {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    timeout: 120000 // 2 minutes de timeout
                 }
             );
 
             if (response.data.success) {
-                setLinkedinCredentials(prev => ({ ...prev, isConnected: true }));
+                setLinkedinCredentials(prev => ({
+                    ...prev,
+                    isConnected: true
+                }));
+                setLastCheckTime(new Date());
                 showMessage('✅ Connexion LinkedIn réussie', 'success');
+
+                // Actualiser les credentials après succès
+                fetchLinkedinCredentials();
             } else {
-                showMessage('❌ Échec connexion LinkedIn', 'error');
+                handleConnectionFailure(response.data.message);
             }
+
         } catch (error) {
-            showMessage('❌ Erreur test connexion', 'error');
+            handleConnectionFailure(error);
         } finally {
-            setLoading(false);
+            setTestingConnection(false);
         }
     };
+    //fonction de gestion des erreurs de connexion
+    const handleConnectionFailure = (error) => {
+        setLinkedinCredentials(prev => ({
+            ...prev,
+            isConnected: false
+        }));
 
-    // 🖼️ Photo handling
+        let errorMessage = '❌ Erreur lors du test de connexion';
+
+        if (error?.response?.data?.message) {
+            errorMessage = `❌ ${error.response.data.message}`;
+        } else if (error?.message?.includes('timeout')) {
+            errorMessage = '❌ Le test de connexion a pris trop de temps';
+        } else if (error?.message?.includes('Network Error')) {
+            errorMessage = '❌ Erreur réseau. Vérifiez votre connexion internet';
+        } else if (typeof error === 'string') {
+            errorMessage = `❌ ${error}`;
+        }
+
+        showMessage(errorMessage, 'error');
+        console.error('Détails de l\'erreur:', error);
+    };
+
     const handlePhotoChange = async (e) => {
         const file = e.target.files[0];
         if (!file) return;
 
         if (file.size > 5 * 1024 * 1024) {
-            showMessage('❌ Image trop grande (max 5MB)', 'error');
+            showMessage('Image trop grande (max 5MB)', 'error');
             return;
         }
 
         if (!file.type.match('image.*')) {
-            showMessage('❌ Format non supporté', 'error');
+            showMessage('Format non supporté', 'error');
             return;
         }
 
@@ -179,17 +249,17 @@ const Settings = ({ onBack }) => {
                 {
                     headers: {
                         'Content-Type': 'multipart/form-data',
-                        'Authorization': `Bearer ${localStorage.getItem('token')}`
+                        Authorization: `Bearer ${localStorage.getItem('token')}`
                     }
                 }
             );
 
             if (response.data.success) {
                 setUserData(prev => ({ ...prev, avatar: response.data.avatar }));
-                showMessage('✅ Photo mise à jour', 'success');
+                showMessage('Photo mise à jour', 'success');
             }
         } catch (error) {
-            showMessage('❌ Erreur mise à jour photo', 'error');
+            showMessage('Erreur lors de la mise à jour de la photo', 'error');
         }
     };
 
@@ -205,253 +275,295 @@ const Settings = ({ onBack }) => {
 
             if (response.data.success) {
                 setUserData(prev => ({ ...prev, avatar: response.data.generatedAvatar }));
-                showMessage('✅ Photo supprimée', 'success');
+                showMessage('Photo supprimée', 'success');
             }
         } catch (error) {
-            showMessage('❌ Erreur suppression photo', 'error');
+            showMessage('Erreur lors de la suppression de la photo', 'error');
         }
     };
 
-    const showMessage = (text, type) => {
-        setMessage({ text, type });
-        setTimeout(() => setMessage({ text: '', type: '' }), 3000);
-    };
-
     if (loading) {
-        return <div className="loading">🔄 Chargement...</div>;
+        return (
+            <div className="flex items-center justify-center min-h-screen">
+                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+            </div>
+        );
     }
 
     return (
-        <div className="settings-main">
-            <button onClick={onBack} className="back-button">
-                ← Retour
-            </button>
+        <div className="container mx-auto px-4 py-8 max-w-4xl">
+            <h1 className="text-3xl font-bold mb-8 text-gray-800 dark:text-white">
+                Paramètres du compte
+            </h1>
 
-            <h2>⚙️ Paramètres du compte</h2>
+            {/* Section Informations personnelles avec photo intégrée */}
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 mb-8">
+                <h2 className="text-2xl font-semibold mb-6 text-gray-800 dark:text-white">
+                    Informations personnelles
+                </h2>
 
-            <div className="settings-tabs">
-                <button
-                    className={`tab-button ${activeTab === 'profile' ? 'active' : ''}`}
-                    onClick={() => setActiveTab('profile')}
-                >
-                    👤 Profil
-                </button>
-                <button
-                    className={`tab-button ${activeTab === 'linkedin' ? 'active' : ''}`}
-                    onClick={() => setActiveTab('linkedin')}
-                >
-                    🔗 LinkedIn
-                </button>
-            </div>
-
-            <div className="settings-content">
-                {activeTab === 'profile' && (
-                    <>
-                        <section className="photo-section">
-                            <h3>Photo de profil</h3>
-                            <div className="avatar-container">
-                                <img
-                                    src={userData.avatar}
-                                    alt="Avatar"
-                                    className="profile-avatar"
-                                    onError={(e) => {
-                                        e.target.src = `https://ui-avatars.com/api/?name=${userData.firstName}+${userData.lastName}&background=random`;
-                                    }}
-                                />
-                                <div className="avatar-buttons">
-                                    <label className="photo-button primary">
-                                        Changer de photo
-                                        <input
-                                            type="file"
-                                            accept="image/*"
-                                            onChange={handlePhotoChange}
-                                            style={{ display: 'none' }}
-                                        />
-                                    </label>
-                                    <button
-                                        className="photo-button secondary"
-                                        onClick={handleDeletePhoto}
-                                    >
-                                        Supprimer la photo
-                                    </button>
-                                </div>
-                            </div>
-                        </section>
-
-                        <section className="info-section">
-                            <h3>Informations personnelles</h3>
-                            <div className="info-field">
-                                <label>Prénom</label>
-                                <div className="info-value">{userData.firstName}</div>
-                            </div>
-                            <div className="info-field">
-                                <label>Nom</label>
-                                <div className="info-value">{userData.lastName}</div>
-                            </div>
-                            <div className="info-field">
-                                <label>Email</label>
-                                {isEditingEmail ? (
-                                    <div className="email-edit">
-                                        <input
-                                            type="email"
-                                            value={userData.email}
-                                            onChange={(e) => setUserData(prev => ({
-                                                ...prev,
-                                                email: e.target.value
-                                            }))}
-                                            className="email-input"
-                                        />
-                                        <div className="email-buttons">
-                                            <button onClick={handleEmailUpdate} className="save-btn">
-                                                ✅ Sauvegarder
-                                            </button>
-                                            <button
-                                                onClick={() => {
-                                                    setUserData(prev => ({ ...prev, email: originalEmail }));
-                                                    setIsEditingEmail(false);
-                                                }}
-                                                className="cancel-btn"
-                                            >
-                                                ❌ Annuler
-                                            </button>
-                                        </div>
-                                    </div>
-                                ) : (
-                                    <div className="info-value-with-button">
-                                        <div className="info-value">{userData.email}</div>
-                                        <button
-                                            onClick={() => setIsEditingEmail(true)}
-                                            className="modify-button"
-                                        >
-                                            Modifier
-                                        </button>
-                                    </div>
-                                )}
-                            </div>
-                        </section>
-                    </>
-                )}
-
-                {activeTab === 'linkedin' && (
-                    <section className="linkedin-section">
-                        <h3>Paramètres LinkedIn</h3>
-                        <div className="info-field">
-                            <label>Email LinkedIn</label>
-                            {isEditingLinkedinEmail ? (
-                                <div className="email-edit">
-                                    <input
-                                        type="email"
-                                        value={linkedinCredentials.email}
-                                        onChange={(e) => setLinkedinCredentials(prev => ({
-                                            ...prev,
-                                            email: e.target.value
-                                        }))}
-                                        className="email-input"
-                                        placeholder="Votre email LinkedIn"
-                                    />
-                                    <div className="email-buttons">
-                                        <button
-                                            onClick={() => updateLinkedinCredentials('email')}
-                                            className="save-btn"
-                                        >
-                                            ✅ Sauvegarder
-                                        </button>
-                                        <button
-                                            onClick={() => setIsEditingLinkedinEmail(false)}
-                                            className="cancel-btn"
-                                        >
-                                            ❌ Annuler
-                                        </button>
-                                    </div>
-                                </div>
-                            ) : (
-                                <div className="info-value-with-button">
-                                    <div className="info-value">
-                                        {linkedinCredentials.email || 'Non configuré'}
-                                    </div>
-                                    <button
-                                        onClick={() => setIsEditingLinkedinEmail(true)}
-                                        className="modify-button"
-                                    >
-                                        Modifier
-                                    </button>
-                                </div>
-                            )}
-                        </div>
-
-                        <div className="info-field">
-                            <label>Mot de passe LinkedIn</label>
-                            {isEditingLinkedinPassword ? (
-                                <div className="password-edit">
-                                    <input
-                                        type="password"
-                                        value={linkedinCredentials.password}
-                                        onChange={(e) => setLinkedinCredentials(prev => ({
-                                            ...prev,
-                                            password: e.target.value
-                                        }))}
-                                        className="password-input"
-                                        placeholder="Votre mot de passe LinkedIn"
-                                    />
-                                    <div className="password-buttons">
-                                        <button
-                                            onClick={() => updateLinkedinCredentials('password')}
-                                            className="save-btn"
-                                        >
-                                            ✅ Sauvegarder
-                                        </button>
-                                        <button
-                                            onClick={() => setIsEditingLinkedinPassword(false)}
-                                            className="cancel-btn"
-                                        >
-                                            ❌ Annuler
-                                        </button>
-                                    </div>
-                                </div>
-                            ) : (
-                                <div className="info-value-with-button">
-                                    <div className="info-value">••••••••</div>
-                                    <button
-                                        onClick={() => setIsEditingLinkedinPassword(true)}
-                                        className="modify-button"
-                                    >
-                                        Modifier
-                                    </button>
-                                </div>
-                            )}
-                        </div>
-
-                        <div className="connection-status">
-                            <p>
-                                Statut de la connexion:
-                                <span className={`status-badge ${linkedinCredentials.isConnected ? 'connected' : 'disconnected'}`}>
-                                    {linkedinCredentials.isConnected ? '🟢 Connecté' : '🔴 Non connecté'}
-                                </span>
-                            </p>
-                            <button
-                                onClick={testLinkedinConnection}
-                                className="test-connection-btn"
-                                disabled={loading}
-                            >
-                                {loading ? '🔄 Test en cours...' : '🔄 Tester la connexion'}
-                            </button>
-                        </div>
-
-                        <div className="info-notification">
-                            <p className="info-text">
-                                ℹ️ Ces identifiants seront utilisés uniquement pour automatiser les actions LinkedIn.
-                                Vos données sont chiffrées et stockées de manière sécurisée.
-                            </p>
-                        </div>
-                    </section>
-                )}
-
-                {message.text && (
-                    <div className={`message-banner ${message.type}`}>
-                        {message.text}
+                {/* Section photo */}
+                <div className="flex items-center space-x-6 mb-6 pb-6 border-b border-gray-200 dark:border-gray-700">
+                    <img
+                        src={userData.avatar}
+                        alt="Avatar"
+                        className="w-24 h-24 rounded-full object-cover border-4 border-white dark:border-gray-700 shadow-lg"
+                        onError={(e) => {
+                            e.target.src = `https://ui-avatars.com/api/?name=${userData.firstName}+${userData.lastName}&background=random`;
+                        }}
+                    />
+                    <div className="space-y-3">
+                        <input
+                            ref={fileInputRef}
+                            type="file"
+                            accept="image/*"
+                            className="hidden"
+                            onChange={handlePhotoChange}
+                        />
+                        <button
+                            onClick={() => fileInputRef.current.click()}
+                            className="px-4 py-2 bg-primary hover:bg-primary-dark text-white rounded-lg transition-colors"
+                        >
+                            Changer la photo
+                        </button>
+                        <button
+                            onClick={handleDeletePhoto}
+                            className="px-4 py-2 border border-red-500 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+                        >
+                            Supprimer la photo
+                        </button>
                     </div>
-                )}
+                </div>
             </div>
+
+            {/* Section Informations personnelles */}
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 mb-8">
+                <h2 className="text-2xl font-semibold mb-6 text-gray-800 dark:text-white">
+                    Informations personnelles
+                </h2>
+                <div className="space-y-6">
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                            Prénom
+                        </label>
+                        <p className="text-gray-900 dark:text-white">{userData.firstName}</p>
+                    </div>
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                            Nom
+                        </label>
+                        <p className="text-gray-900 dark:text-white">{userData.lastName}</p>
+                    </div>
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                            Email
+                        </label>
+                        {isEditingEmail ? (
+                            <div className="flex space-x-3">
+                                <input
+                                    type="email"
+                                    value={userData.email}
+                                    onChange={(e) => setUserData(prev => ({ ...prev, email: e.target.value }))}
+                                    className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                                />
+                                <button
+                                    onClick={handleEmailUpdate}
+                                    className="px-4 py-2 bg-primary hover:bg-primary-dark text-white rounded-lg transition-colors"
+                                >
+                                    Sauvegarder
+                                </button>
+                                <button
+                                    onClick={() => {
+                                        setUserData(prev => ({ ...prev, email: originalEmail }));
+                                        setIsEditingEmail(false);
+                                    }}
+                                    className="px-4 py-2 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 rounded-lg transition-colors"
+                                >
+                                    Annuler
+                                </button>
+                            </div>
+                        ) : (
+                            <div className="flex justify-between items-center">
+                                <p className="text-gray-900 dark:text-white">{userData.email}</p>
+                                <button
+                                    onClick={() => setIsEditingEmail(true)}
+                                    className="text-primary hover:text-primary-dark transition-colors"
+                                >
+                                    Modifier
+                                </button>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            </div>
+
+            {/* Section LinkedIn */}
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+                <h2 className="text-2xl font-semibold mb-6 text-gray-800 dark:text-white">
+                    Paramètres LinkedIn
+                </h2>
+                <div className="space-y-6">
+                    {/* Email LinkedIn */}
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                            Email LinkedIn
+                        </label>
+                        {isEditingLinkedinEmail ? (
+                            <div className="flex space-x-3">
+                                <input
+                                    type="email"
+                                    value={linkedinCredentials.email}
+                                    onChange={(e) => setLinkedinCredentials(prev => ({
+                                        ...prev,
+                                        email: e.target.value
+                                    }))}
+                                    className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                                    placeholder="Votre email LinkedIn"
+                                />
+                                <button
+                                    onClick={() => updateLinkedinCredentials('email')}
+                                    className="px-4 py-2 bg-primary hover:bg-primary-dark text-white rounded-lg transition-colors"
+                                >
+                                    Sauvegarder
+                                </button>
+                                <button
+                                    onClick={() => setIsEditingLinkedinEmail(false)}
+                                    className="px-4 py-2 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 rounded-lg transition-colors"
+                                >
+                                    Annuler
+                                </button>
+                            </div>
+                        ) : (
+                            <div className="flex justify-between items-center">
+                                <p className="text-gray-900 dark:text-white">
+                                    {linkedinCredentials.email || 'Non configuré'}
+                                </p>
+                                <button
+                                    onClick={() => setIsEditingLinkedinEmail(true)}
+                                    className="text-primary hover:text-primary-dark transition-colors"
+                                >
+                                    Modifier
+                                </button>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Mot de passe LinkedIn */}
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                            Mot de passe LinkedIn
+                        </label>
+                        {isEditingLinkedinPassword ? (
+                            <div className="flex space-x-3">
+                                <input
+                                    type="password"
+                                    value={linkedinCredentials.password}
+                                    onChange={(e) => setLinkedinCredentials(prev => ({
+                                        ...prev,
+                                        password: e.target.value
+                                    }))}
+                                    className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                                    placeholder="Votre mot de passe LinkedIn"
+                                />
+                                <button
+                                    onClick={() => updateLinkedinCredentials('password')}
+                                    className="px-4 py-2 bg-primary hover:bg-primary-dark text-white rounded-lg transition-colors"
+                                >
+                                    Sauvegarder
+                                </button>
+                                <button
+                                    onClick={() => setIsEditingLinkedinPassword(false)}
+                                    className="px-4 py-2 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 rounded-lg transition-colors"
+                                >
+                                    Annuler
+                                </button>
+                            </div>
+                        ) : (
+                            <div className="flex justify-between items-center">
+                                <p className="text-gray-900 dark:text-white">••••••••</p>
+                                <button
+                                    onClick={() => setIsEditingLinkedinPassword(true)}
+                                    className="text-primary hover:text-primary-dark transition-colors"
+                                >
+                                    Modifier
+                                </button>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Statut de connexion LinkedIn */}
+                    <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-6">
+                        <div className="flex justify-between items-center mb-4">
+                            <div className="flex items-center space-x-2">
+                <span className="text-gray-700 dark:text-gray-300">
+                  Statut de la connexion:
+                </span>
+                                <span className={`px-3 py-1 rounded-full text-sm font-medium ${
+                                    linkedinCredentials.isConnected
+                                        ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
+                                        : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
+                                }`}>
+                  {linkedinCredentials.isConnected ? 'Connecté' : 'Non connecté'}
+                </span>
+                            </div>
+                            {lastCheckTime && (
+                                <span className="text-sm text-gray-500 dark:text-gray-400">
+                  Dernière vérification: {new Date(lastCheckTime).toLocaleString('fr-FR')}
+                </span>
+                            )}
+                        </div>
+
+                        <button
+                            onClick={testLinkedinConnection}
+                            disabled={testingConnection || !linkedinCredentials.email || linkedinCredentials.password === '••••••••'}
+                            className={`w-full px-4 py-2 rounded-lg transition-colors ${
+                                testingConnection || !linkedinCredentials.email || linkedinCredentials.password === '••••••••'
+                                    ? 'bg-gray-300 cursor-not-allowed'
+                                    : 'bg-primary hover:bg-primary-dark text-white'
+                            }`}
+                        >
+                            {testingConnection ? (
+                                <div className="flex items-center justify-center">
+                                    <div className="animate-spin mr-2 h-5 w-5 border-2 border-white border-t-transparent rounded-full"></div>
+                                    Test en cours...
+                                </div>
+                            ) : 'Tester la connexion'}
+                        </button>
+
+                        {(!linkedinCredentials.email || linkedinCredentials.password === '••••••••') && (
+                            <p className="mt-2 text-sm text-yellow-600 dark:text-yellow-500">
+                                ⚠️ Veuillez configurer vos identifiants LinkedIn avant de tester la connexion
+                            </p>
+                        )}
+                    </div>
+
+                    {/* Message d'information */}
+                    <div className="bg-blue-50 dark:bg-blue-900/30 rounded-lg p-4">
+                        <p className="text-sm text-blue-800 dark:text-blue-200">
+                            ℹ️ Ces identifiants seront utilisés uniquement pour automatiser les actions LinkedIn.
+                            Vos données sont chiffrées et stockées de manière sécurisée.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            {/* Messages de notification */}
+            {message.text && (
+                <div className={`fixed bottom-4 right-4 p-4 rounded-lg shadow-lg transform transition-all duration-300 ${
+                    message.type === 'success'
+                        ? 'bg-green-500 text-white'
+                        : message.type === 'error'
+                            ? 'bg-red-500 text-white'
+                            : 'bg-blue-500 text-white'
+                }`}>
+                    <p className="flex items-center">
+                        {message.type === 'success' && <span className="mr-2"></span>}
+                        {message.type === 'error' && <span className="mr-2"></span>}
+                        {message.text}
+                    </p>
+                </div>
+            )}
+
         </div>
     );
 };

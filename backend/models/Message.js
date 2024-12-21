@@ -1,31 +1,34 @@
+// models/Message.js
 const mongoose = require('mongoose');
 
-const LinkedInMessageSchema = new mongoose.Schema({
-    userId: {
+const MessageSchema = new mongoose.Schema({
+    conversationId: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'User',
+        ref: 'Conversation',
         required: true
     },
-    prospectId: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'Prospect',
+    content: {
+        type: String,
         required: true
     },
-    linkedinMessageId: String,
-    content: String,
+    sender: {
+        type: String,
+        enum: ['user', 'prospect'],
+        required: true
+    },
     status: {
         type: String,
-        enum: ['pending', 'sent', 'failed', 'read'],
+        enum: ['pending', 'sent', 'error'],
         default: 'pending'
     },
-    type: {
-        type: String,
-        enum: ['invitation', 'message'],
-        required: true
-    },
-    direction: {
-        type: String,
-        enum: ['sent', 'received'],
-        required: true
+    error: String,
+    linkedinMessageId: String,
+    read: {
+        type: Boolean,
+        default: false
     }
-}, { timestamps: true });
+}, {
+    timestamps: true
+});
+
+module.exports = mongoose.model('Message', MessageSchema);

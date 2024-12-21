@@ -3,7 +3,42 @@ const router = express.Router();
 const Prospect = require('../models/Prospect');
 const Notification = require('../models/Notification');
 const authenticate = require('../middleware/authenticate');
+const List = require('../models/List');
 
+
+router.get('/:id/lists', authenticate, async (req, res) => {
+    try {
+        // Trouver toutes les listes qui contiennent ce prospect
+        const lists = await List.find({
+            userId: req.userId,
+            prospects: req.params.id
+        }).populate('prospects');  // On populate les prospects pour pouvoir les compter
+
+        if (!lists) {
+            return res.json({
+                success: true,
+                lists: []
+            });
+        }
+
+        const formattedLists = lists.map(list => ({
+            _id: list._id,
+            name: list.name,
+            prospectsCount: list.prospects.length // On compte le nombre réel de prospects
+        }));
+
+        res.json({
+            success: true,
+            lists: formattedLists
+        });
+    } catch (error) {
+        console.error('Erreur lors de la récupération des listes du prospect:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Erreur lors de la récupération des listes'
+        });
+    }
+});
 // Ajout d'un prospect
 router.post('/add', authenticate, async (req, res) => {
     try {
@@ -184,7 +219,6 @@ router.post('/batch', authenticate, async (req, res) => {
 // Récupération des prospects
 router.get('/', authenticate, async (req, res) => {
     try {
-        // Modifier cette ligne pour augmenter la limite par défaut
         const { page = 1, limit = 1000, status, source, search } = req.query;
         const query = { userId: req.userId };
 
@@ -199,16 +233,27 @@ router.get('/', authenticate, async (req, res) => {
             ];
         }
 
-        // Récupération avec une limite plus élevée
+        // Récupération des prospects avec leurs listes
         const prospects = await Prospect.find(query)
+            .populate({
+                path: 'lists',
+                select: 'name prospects',
+                match: { userId: req.userId }
+            })
             .sort({ createdAt: -1 });
-        // Supprimez ces lignes pour retirer la pagination
-        // .skip((page - 1) * limit)
-        // .limit(parseInt(limit));
+
+        // Transformer les prospects avec le compte des listes
+        const transformedProspects = prospects.map(prospect => {
+            const prospectData = updateProspectFormat(prospect);
+            prospectData.lists = prospect.lists ? prospect.lists.map(list => ({
+                _id: list._id,
+                name: list.name,
+                prospectsCount: list.prospects.length
+            })) : [];
+            return prospectData;
+        });
 
         const total = await Prospect.countDocuments(query);
-
-        const transformedProspects = prospects.map(updateProspectFormat);
 
         res.json({
             success: true,
@@ -340,7 +385,8 @@ function updateProspectFormat(prospect) {
         source: prospect.source,
         extractedAt: prospect.extractedAt,
         createdAt: prospect.createdAt,
-        lastContactedAt: prospect.lastContactedAt
+        lastContactedAt: prospect.lastContactedAt,
+        lists: prospect.lists || []
     };
 }
 

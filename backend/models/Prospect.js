@@ -64,21 +64,22 @@ const prospectSchema = new mongoose.Schema({
     lastContactedAt: Date,
 
     // Relations (existantes + nouvelles)
+    lists: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'List'
+    }],
+
     userId: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User',
         required: true,
         index: true
-    },
-    listId: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'List',
-        default: null
     }
 }, {
     timestamps: true,
     toJSON: { getters: true }
 });
+
 
 // Index composé pour l'unicité par utilisateur
 prospectSchema.index({ profileLink: 1, userId: 1 }, { unique: true });

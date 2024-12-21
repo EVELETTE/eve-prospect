@@ -1,329 +1,289 @@
 // services/LinkedInBot.js
 const puppeteer = require('puppeteer-extra');
 const StealthPlugin = require('puppeteer-extra-plugin-stealth');
-const randomUseragent = require('random-useragent');
-const { createLogger, format, transports } = require('winston');
-const mongoose = require('mongoose');
+const EventEmitter = require('events');
+const logger = require('./logger');
+const CONSTANTS = require('./config');
+const SessionManager = require('./SessionManager');
+const LinkedInActionManager = require('./ActionManager');
+const { setupBrowser } = require('./utils/helpers');
+const decryptCredentials = require('./utils/decrypt');
 
-// Configuration des plugins
 puppeteer.use(StealthPlugin());
 
-// Configuration du logger
-const logger = createLogger({
-    format: format.combine(
-        format.timestamp(),
-        format.json()
-    ),
-    transports: [
-        new transports.File({ filename: 'bot-error.log', level: 'error' }),
-        new transports.File({ filename: 'bot-activity.log' })
-    ]
-});
-
-class LinkedInBot {
+class LinkedInBot extends EventEmitter {
     constructor() {
+        super();
         this.browser = null;
         this.page = null;
-        this.MIN_DELAY = 2000;
-        this.MAX_DELAY = 5000;
-        this.MAX_ACTIONS_PER_DAY = 100;
-        this.sessionData = new Map();
+        this.sessionManager = new SessionManager();
+        this.actionManager = null;
+        this.isLoggedIn = false;
+        this.sessionId = null;
+        this.isClosing = false;
+        this.lastLoginCheck = null;
+        this.loginCheckInterval = 5 * 60 * 1000; // 5 minutes
     }
 
-    async initialize(sessionId) {
+    async initialize(sessionId = 'default') {
         try {
-            // Configuration du navigateur avec des options anti-détection
-            this.browser = await puppeteer.launch({
-                headless: true,
+            this.sessionId = sessionId;
+            logger.info(`Initialisation du bot (Session: ${sessionId})`);
+            this.sessionManager.initSession(sessionId);
+
+            const browserConfig = {
+                headless: false,
                 args: [
                     '--no-sandbox',
                     '--disable-setuid-sandbox',
-                    '--disable-infobars',
-                    '--window-position=0,0',
-                    '--ignore-certifcate-errors',
-                    '--ignore-certifcate-errors-spki-list',
                     '--disable-notifications',
-                    '--disable-blink-features=AutomationControlled'
+                    '--start-maximized',
+                    '--disable-blink-features=AutomationControlled',
+                    '--window-size=1920,1080'
                 ],
                 defaultViewport: {
                     width: 1920,
                     height: 1080
                 }
-            });
+            };
 
-            // Création d'une nouvelle page
+            this.browser = await puppeteer.launch(browserConfig);
             this.page = await this.browser.newPage();
 
-            // Configuration des headers pour éviter la détection
-            await this.page.setUserAgent(randomUseragent.getRandom());
-            await this.page.setExtraHTTPHeaders({
-                'Accept-Language': 'fr-FR,fr;q=0.9,en-US;q=0.8,en;q=0.7'
-            });
+            await this._setupAntiDetection();
+            this.actionManager = new LinkedInActionManager(this.page, this.sessionManager);
 
-            // Injection de scripts pour contourner la détection
-            await this.page.evaluateOnNewDocument(() => {
-                Object.defineProperty(navigator, 'webdriver', {
-                    get: () => undefined
-                });
-                window.navigator.chrome = {
-                    runtime: {}
-                };
-            });
+            // Configuration des timeouts
+            await this.page.setDefaultNavigationTimeout(CONSTANTS.NAVIGATION_TIMEOUT);
+            await this.page.setDefaultTimeout(CONSTANTS.NAVIGATION_TIMEOUT);
 
-            // Initialisation de la session
-            this.sessionData.set(sessionId, {
-                actionsToday: 0,
-                lastActionTime: null
-            });
+            await this._setupEventListeners();
 
-            logger.info(`Bot initialisé pour la session ${sessionId}`);
+            logger.info('Bot initialisé avec succès');
             return true;
 
         } catch (error) {
-            logger.error('Erreur lors de l\'initialisation du bot:', error);
-            throw error;
+            logger.error('Erreur lors de l\'initialisation:', error);
+            await this._takeErrorScreenshot('init-error');
+            return false;
         }
     }
 
-    async login(email, password) {
-        try {
-            await this.page.goto('https://www.linkedin.com/login', { waitUntil: 'networkidle0' });
-            await this.randomDelay();
+    async _setupAntiDetection() {
+        const userAgent = CONSTANTS.USER_AGENTS[
+            Math.floor(Math.random() * CONSTANTS.USER_AGENTS.length)
+            ];
 
-            // Remplir les champs de connexion
-            await this.page.type('#username', email);
-            await this.page.type('#password', password);
-            await this.randomDelay();
+        await this.page.setUserAgent(userAgent);
+        await this.page.setExtraHTTPHeaders({
+            'Accept-Language': 'fr-FR,fr;q=0.9,en-US;q=0.8,en;q=0.7'
+        });
+
+        await this.page.evaluateOnNewDocument(() => {
+            Object.defineProperty(navigator, 'webdriver', { get: () => undefined });
+            window.chrome = {
+                runtime: {},
+                loadTimes: () => {},
+                csi: () => {},
+                app: {}
+            };
+            Object.defineProperty(navigator, 'permissions', {
+                get: () => ({
+                    query: () => Promise.resolve({ state: 'granted' })
+                })
+            });
+        });
+    }
+
+    async login(encryptedEmail, encryptedPassword) {
+        try {
+            logger.info('Tentative de connexion à LinkedIn');
+
+            // Décrypter les identifiants
+            const email = decryptCredentials.decrypt(encryptedEmail);
+            const password = decryptCredentials.decrypt(encryptedPassword);
+
+            console.log('Email décrypté:', email); // Pour le debug
+
+            if (!email || !password) {
+                logger.error('Identifiants invalides ou non décryptés');
+                return false;
+            }
+
+            await this.page.goto(CONSTANTS.URLs.LOGIN, {
+                waitUntil: 'networkidle0',
+                timeout: CONSTANTS.NAVIGATION_TIMEOUT
+            });
+
+            await this._wait(2000);
+
+            // Remplir le formulaire avec les identifiants décryptés
+            await this._humanType('#username', email);
+            await this._wait(2000);
+            await this._humanType('#password', password);
+            await this._wait(2000);
 
             // Cliquer sur le bouton de connexion
             await this.page.click('button[type="submit"]');
-            await this.page.waitForNavigation({ waitUntil: 'networkidle0' });
 
-            // Vérifier si la connexion a réussi
-            const isLoggedIn = await this.page.evaluate(() => {
-                return document.querySelector('.feed-identity-module') !== null;
+            // Attendre et vérifier la connexion
+            for (let i = 0; i < 5; i++) {
+                await this._wait(5000);
+                if (await this._checkLoginStatus()) {
+                    this.isLoggedIn = true;
+                    this.lastLoginCheck = Date.now();
+                    logger.info('Connexion réussie');
+                    return true;
+                }
+                logger.info(`Tentative de vérification ${i + 1}/5`);
+            }
+
+            logger.warn('Impossible de confirmer la connexion');
+            await this._takeErrorScreenshot('login-failed');
+            return false;
+
+        } catch (error) {
+            logger.error('Erreur lors de la connexion:', error);
+            await this._takeErrorScreenshot('login-error');
+            return false;
+        }
+    }
+
+    async _checkLoginStatus() {
+        try {
+            // Vérifier si la session est encore valide
+            if (this.lastLoginCheck &&
+                Date.now() - this.lastLoginCheck < this.loginCheckInterval) {
+                return true;
+            }
+
+            const currentUrl = await this.page.url();
+
+            // Vérification par URL
+            if (currentUrl.includes('feed') ||
+                currentUrl.includes('mynetwork') ||
+                currentUrl.includes('messaging')) {
+                return true;
+            }
+
+            // Vérification par éléments de la page
+            const isLoggedIn = await this.page.evaluate((selectors) => {
+                return !!document.querySelector(selectors.NAV.GLOBAL) &&
+                    !!document.querySelector(selectors.NAV.IDENTITY);
+            }, CONSTANTS.SELECTORS);
+
+            if (isLoggedIn) {
+                this.lastLoginCheck = Date.now();
+            }
+
+            return isLoggedIn;
+
+        } catch (error) {
+            logger.error('Erreur vérification statut:', error);
+            return false;
+        }
+    }
+
+    async _humanType(selector, text) {
+        try {
+            await this.page.waitForSelector(selector);
+            for (const char of text) {
+                await this.page.type(selector, char, {
+                    delay: Math.random() * 100 + 50
+                });
+                if (Math.random() < 0.1) {
+                    await this._wait(Math.random() * 500 + 200);
+                }
+            }
+        } catch (error) {
+            logger.error(`Erreur lors de la frappe sur ${selector}:`, error);
+            throw error;
+        }
+    }
+
+    async _wait(ms) {
+        return new Promise(resolve => setTimeout(resolve, ms));
+    }
+
+    async _takeErrorScreenshot(context) {
+        if (!this.page) return null;
+
+        try {
+            const timestamp = Date.now();
+            const filename = path.join(
+                CONSTANTS.PATHS.ERROR_SCREENSHOTS,
+                `error-${context}-${timestamp}.png`
+            );
+
+            await this.page.screenshot({
+                path: filename,
+                fullPage: true,
+                quality: CONSTANTS.SCREENSHOT_QUALITY
             });
 
-            if (!isLoggedIn) {
-                throw new Error('Échec de la connexion LinkedIn');
-            }
-
-            logger.info(`Connexion réussie pour ${email}`);
-            return true;
-
+            logger.info(`Capture d'écran sauvegardée: ${filename}`);
+            return filename;
         } catch (error) {
-            logger.error('Erreur de connexion:', error);
-            throw error;
+            logger.error('Erreur lors de la capture d\'écran:', error);
+            return null;
         }
     }
 
-    async visitProfile(profileUrl, sessionId) {
-        try {
-            await this.checkRateLimit(sessionId);
-            await this.randomDelay();
+    async _setupEventListeners() {
+        this.browser.on('disconnected', async () => {
+            if (!this.isClosing && this.sessionManager.canRetry(this.sessionId)) {
+                logger.warn('Reconnexion après déconnexion...');
+                await this.initialize(this.sessionId);
+            }
+        });
 
-            await this.page.goto(profileUrl, { waitUntil: 'networkidle0' });
+        this.page.on('error', error => {
+            logger.error('Erreur de page:', error);
+            this.emit('error', error);
+        });
 
-            // Simuler le scroll
-            await this.simulateReading();
-
-            // Extraire les informations du profil
-            const profileData = await this.extractProfileInfo();
-
-            logger.info(`Profil visité: ${profileUrl}`);
-            return profileData;
-
-        } catch (error) {
-            logger.error(`Erreur lors de la visite du profil ${profileUrl}:`, error);
-            throw error;
-        }
+        this.page.on('console', msg => {
+            if (msg.type() === 'error') {
+                logger.error('Console error:', msg.text());
+            }
+        });
     }
 
-    async sendConnectionRequest(profileUrl, message, sessionId) {
-        try {
-            await this.checkRateLimit(sessionId);
-            await this.page.goto(profileUrl, { waitUntil: 'networkidle0' });
-            await this.randomDelay();
-
-            // Cliquer sur le bouton de connexion
-            const connectButton = await this.page.$('button[aria-label*="Se connecter"], button[aria-label*="Connect"]');
-            if (!connectButton) {
-                throw new Error('Bouton de connexion non trouvé');
-            }
-
-            await connectButton.click();
-            await this.randomDelay();
-
-            // Ajouter un message si fourni
-            if (message) {
-                const addNoteButton = await this.page.$('button[aria-label*="Ajouter une note"]');
-                if (addNoteButton) {
-                    await addNoteButton.click();
-                    await this.randomDelay();
-
-                    await this.page.type('textarea[name="message"]', message);
-                    await this.randomDelay();
-                }
-            }
-
-            // Envoyer l'invitation
-            const sendButton = await this.page.$('button[aria-label*="Envoyer"]');
-            if (sendButton) {
-                await sendButton.click();
-                await this.randomDelay();
-            }
-
-            logger.info(`Invitation envoyée à ${profileUrl}`);
-            return true;
-
-        } catch (error) {
-            logger.error(`Erreur lors de l'envoi de l'invitation à ${profileUrl}:`, error);
-            throw error;
-        }
+    // Méthodes publiques pour l'interaction
+    async getConversations() {
+        return await this.actionManager.extractConversations(this.sessionId);
     }
 
-    async sendMessage(profileUrl, message, sessionId) {
-        try {
-            await this.checkRateLimit(sessionId);
-            await this.page.goto(profileUrl, { waitUntil: 'networkidle0' });
-            await this.randomDelay();
-
-            // Cliquer sur le bouton de message
-            const messageButton = await this.page.$('button[aria-label*="Message"]');
-            if (!messageButton) {
-                throw new Error('Bouton de message non trouvé');
-            }
-
-            await messageButton.click();
-            await this.randomDelay();
-
-            // Écrire et envoyer le message
-            await this.page.type('div[role="textbox"]', message);
-            await this.randomDelay();
-
-            const sendButton = await this.page.$('button[aria-label*="Envoyer"]');
-            if (sendButton) {
-                await sendButton.click();
-                await this.randomDelay();
-            }
-
-            logger.info(`Message envoyé à ${profileUrl}`);
-            return true;
-
-        } catch (error) {
-            logger.error(`Erreur lors de l'envoi du message à ${profileUrl}:`, error);
-            throw error;
-        }
+    async getMessages(profileUrl) {
+        return await this.actionManager.extractMessages(profileUrl, this.sessionId);
     }
 
-    async extractProfileInfo() {
-        try {
-            return await this.page.evaluate(() => ({
-                name: document.querySelector('h1.text-heading-xlarge')?.textContent.trim(),
-                title: document.querySelector('div.text-body-medium')?.textContent.trim(),
-                location: document.querySelector('.text-body-small.inline.t-black--light.break-words')?.textContent.trim(),
-                company: document.querySelector('.pv-text-details__right-panel .inline-show-more-text')?.textContent.trim(),
-                about: document.querySelector('div#about')?.textContent.trim(),
-                experience: Array.from(document.querySelectorAll('.experience-section li')).map(exp => ({
-                    title: exp.querySelector('.t-bold')?.textContent.trim(),
-                    company: exp.querySelector('.t-normal')?.textContent.trim(),
-                    duration: exp.querySelector('.t-normal.t-black--light')?.textContent.trim()
-                }))
-            }));
-        } catch (error) {
-            logger.error('Erreur lors de l\'extraction des informations du profil:', error);
-            throw error;
-        }
+    async sendMessage(profileUrl, message) {
+        return await this.actionManager.sendMessage(profileUrl, message, this.sessionId);
     }
 
-    async runCampaign(campaignId, profiles, messageTemplate, options = {}) {
-        const sessionId = `campaign_${campaignId}`;
-        const results = {
-            successful: [],
-            failed: [],
-            skipped: []
-        };
-
-        try {
-            await this.initialize(sessionId);
-            await this.login(options.email, options.password);
-
-            for (const profile of profiles) {
-                try {
-                    const profileData = await this.visitProfile(profile.url, sessionId);
-                    await this.randomDelay();
-
-                    // Personnaliser le message
-                    const personalizedMessage = messageTemplate
-                        .replace('{{name}}', profileData.name || '')
-                        .replace('{{company}}', profileData.company || '');
-
-                    // Envoyer la demande de connexion
-                    await this.sendConnectionRequest(profile.url, personalizedMessage, sessionId);
-
-                    results.successful.push({
-                        profile: profile.url,
-                        data: profileData
-                    });
-
-                    await this.randomDelay();
-
-                } catch (error) {
-                    logger.error(`Erreur pour le profil ${profile.url}:`, error);
-                    results.failed.push({
-                        profile: profile.url,
-                        error: error.message
-                    });
-                }
-            }
-
-        } catch (error) {
-            logger.error(`Erreur lors de la campagne ${campaignId}:`, error);
-            throw error;
-        } finally {
-            if (this.browser) {
-                await this.browser.close();
-            }
-        }
-
-        return results;
+    async sendConnectionRequest(profileUrl, message = null) {
+        return await this.actionManager.sendConnectionRequest(profileUrl, message, this.sessionId);
     }
 
-    async randomDelay() {
-        const delay = Math.floor(Math.random() * (this.MAX_DELAY - this.MIN_DELAY + 1)) + this.MIN_DELAY;
-        await new Promise(resolve => setTimeout(resolve, delay));
-    }
-
-    async checkRateLimit(sessionId) {
-        const session = this.sessionData.get(sessionId);
-        if (!session) {
-            throw new Error('Session non trouvée');
-        }
-
-        const now = new Date();
-        if (session.lastActionTime) {
-            const lastActionDay = new Date(session.lastActionTime).setHours(0, 0, 0, 0);
-            const today = now.setHours(0, 0, 0, 0);
-
-            if (lastActionDay < today) {
-                session.actionsToday = 0;
-            }
-        }
-
-        if (session.actionsToday >= this.MAX_ACTIONS_PER_DAY) {
-            throw new Error('Limite quotidienne d\'actions atteinte');
-        }
-
-        session.lastActionTime = now;
-        session.actionsToday++;
-        this.sessionData.set(sessionId, session);
+    async getProfileInfo(profileUrl) {
+        return await this.actionManager.extractProfileInfo(profileUrl, this.sessionId);
     }
 
     async close() {
-        if (this.browser) {
-            await this.browser.close();
-            this.browser = null;
-            this.page = null;
+        try {
+            this.isClosing = true;
+            if (this.browser) {
+                await this.browser.close();
+                this.browser = null;
+                this.page = null;
+                logger.info('Bot fermé avec succès');
+            }
+        } catch (error) {
+            logger.error('Erreur lors de la fermeture:', error);
+        } finally {
+            this.isClosing = false;
+            this.sessionManager.clearSession(this.sessionId);
         }
     }
 }

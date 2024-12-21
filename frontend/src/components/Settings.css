@@ -1,539 +1,800 @@
-/* 🎨 Conteneur principal */
-.settings-main {
-    padding: 2rem;
-    max-width: 800px;
-    margin: 0 auto;
-    color: var(--text-color, #333);
-    transition: all 0.3s ease;
-}
-
-/* 🔙 Bouton retour */
-.back-button {
-    display: inline-flex;
-    align-items: center;
-    padding: 8px 16px;
-    background-color: #f0f2f5;
-    border: none;
-    border-radius: 8px;
-    color: #1a1a1a;
-    font-size: 14px;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    margin-bottom: 24px;
-}
-
-.back-button:hover {
-    background-color: #e4e6e9;
-    transform: translateX(-2px);
-}
-
-/* 📦 Conteneur principal des paramètres */
-.settings-content {
-    background: white;
-    border-radius: 12px;
-    padding: 24px;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
-    transition: all 0.3s ease;
-}
-
-/* 📝 Sections */
-.photo-section, .info-section {
-    margin-bottom: 32px;
-    padding-bottom: 24px;
-    border-bottom: 1px solid #e4e6e9;
-}
-
-.photo-section:last-child, .info-section:last-child {
-    border-bottom: none;
-    margin-bottom: 0;
-    padding-bottom: 0;
-}
-
-/* 📌 Titres */
-h2 {
-    font-size: 24px;
-    font-weight: 600;
-    color: #1a1a1a;
-    margin-bottom: 24px;
-}
-
-h3 {
-    font-size: 18px;
-    font-weight: 600;
-    color: #1a1a1a;
-    margin-bottom: 16px;
-}
-
-/* 🖼️ Section avatar */
-.avatar-container {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 16px;
-}
-
-.profile-avatar {
-    width: 96px;
-    height: 96px;
-    border-radius: 50%;
-    object-fit: cover;
-    border: 3px solid #fff;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    transition: transform 0.2s ease;
-}
-
-.profile-avatar:hover {
-    transform: scale(1.05);
-}
-
-/* 🎛️ Boutons avatar */
-.avatar-buttons {
-    display: flex;
-    gap: 12px;
-}
-
-.photo-button {
-    padding: 8px 16px;
-    border-radius: 8px;
-    font-size: 14px;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.2s ease;
-}
-
-.photo-button.primary {
-    background-color: #0066ff;
-    color: white;
-    border: none;
-}
-
-.photo-button.primary:hover {
-    background-color: #0052cc;
-    transform: translateY(-1px);
-}
-
-.photo-button.secondary {
-    background-color: white;
-    color: #dc3545;
-    border: 1px solid #dc3545;
-}
-
-.photo-button.secondary:hover {
-    background-color: #fff5f5;
-    transform: translateY(-1px);
-}
-
-/* 📝 Champs d'information */
-.info-field {
-    margin-bottom: 24px;
-}
-
-.info-field:last-child {
-    margin-bottom: 0;
-}
-
-.info-field label {
-    display: block;
-    font-size: 14px;
-    color: #666;
-    margin-bottom: 8px;
-}
-
-.info-value {
-    font-size: 16px;
-    color: #1a1a1a;
-}
-
-/* 📧 Section email */
-.info-value-with-button {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-
-.email-edit {
-    display: flex;
-    gap: 12px;
-    width: 100%;
-}
-
-.email-input {
-    flex: 1;
-    padding: 8px 12px;
-    border: 2px solid #e4e6e9;
-    border-radius: 8px;
-    font-size: 14px;
-    transition: all 0.2s ease;
-}
-
-.email-input:focus {
-    outline: none;
-    border-color: #0066ff;
-    box-shadow: 0 0 0 3px rgba(0, 102, 255, 0.1);
-}
-
-/* 🌗 Mode sombre */
-.dark .settings-main {
-    color: #e5e7eb;
-    background-color: #1a1a1a;
-}
-
-.dark .settings-content {
-    background: #2d2d2d;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
-}
-
-.dark .back-button {
-    background-color: #374151;
-    color: #e5e7eb;
-}
-
-.dark .back-button:hover {
-    background-color: #4b5563;
-}
-
-.dark h2,
-.dark h3 {
-    color: #e5e7eb;
-}
-
-.dark .photo-section,
-.dark .info-section {
-    border-bottom-color: #404040;
-}
-
-.dark .info-field label {
-    color: #9ca3af;
-}
-
-.dark .info-value {
-    color: #e5e7eb;
-}
-
-.dark .profile-avatar {
-    border-color: #404040;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-}
-
-.dark .photo-button.secondary {
-    background-color: #2d2d2d;
-    border-color: #dc3545;
-    color: #dc3545;
-}
-
-.dark .photo-button.secondary:hover {
-    background-color: #3d3d3d;
-}
-
-.dark .email-input {
-    background-color: #374151;
-    color: #e5e7eb;
-    border-color: #4b5563;
-}
-
-.dark .email-input:focus {
-    border-color: #0066ff;
-    box-shadow: 0 0 0 3px rgba(0, 102, 255, 0.2);
-}
-
-.dark .modify-button {
-    background-color: #0066ff;
-}
-
-.dark .cancel-btn {
-    background-color: #374151;
-    color: #e5e7eb;
-    border-color: #4b5563;
-}
-
-.dark .cancel-btn:hover {
-    background-color: #4b5563;
-}
-
-/* Messages et notifications */
-.message-banner {
-    position: fixed;
-    bottom: 24px;
-    right: 24px;
-    padding: 12px 24px;
-    border-radius: 8px;
-    font-size: 14px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-    animation: slideIn 0.3s ease;
-    z-index: 1000;
-}
-
-.message-banner.success {
-    background-color: #10b981;
-    color: white;
-}
-
-.message-banner.error {
-    background-color: #ef4444;
-    color: white;
-}
-
-/* État de chargement */
-.loading {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    min-height: 200px;
-    font-size: 16px;
-    color: #666;
-}
-
-.dark .loading {
-    color: #9ca3af;
-}
-
-/* Animations */
-@keyframes slideIn {
-    from {
-        opacity: 0;
-        transform: translateY(20px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-
-/* Responsive Design */
-@media (max-width: 768px) {
+    /* 🎨 Conteneur principal */
     .settings-main {
-        padding: 1rem;
+        padding: 2rem;
+        max-width: 800px;
+        margin: 0 auto;
+        color: var(--text-color, #333);
+        transition: all 0.3s ease;
     }
 
+    .modify-button {
+        background-color: #0066ff;
+        color: white;
+        border: none;
+        padding: 8px 16px;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+    .back-button:hover {
+        background-color: #e4e6e9;
+        transform: translateX(-2px);
+    }
+
+    /* 📦 Conteneur principal des paramètres */
     .settings-content {
-        padding: 16px;
+        background: white;
+        border-radius: 12px;
+        padding: 24px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+        transition: all 0.3s ease;
+    }
+
+    /* 📝 Sections */
+    .photo-section, .info-section {
+        margin-bottom: 32px;
+        padding-bottom: 24px;
+        border-bottom: 1px solid #e4e6e9;
+    }
+
+    .photo-section:last-child, .info-section:last-child {
+        border-bottom: none;
+        margin-bottom: 0;
+        padding-bottom: 0;
+    }
+
+    /* 📌 Titres */
+    h2 {
+        font-size: 24px;
+        font-weight: 600;
+        color: #1a1a1a;
+        margin-bottom: 24px;
+    }
+
+    h3 {
+        font-size: 18px;
+        font-weight: 600;
+        color: #1a1a1a;
+        margin-bottom: 16px;
+    }
+
+    /* 🖼️ Section avatar */
+    .avatar-container {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 16px;
+    }
+
+    .profile-avatar {
+        width: 150px;
+        height: 150px;
+        border-radius: 50%;
+        object-fit: cover;
+        border: 3px solid #fff;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        transition: transform 0.2s ease;
+        display: flex;
+        align-self: center;
+    }
+
+    .profile-avatar:hover {
+        transform: scale(1.05);
+    }
+
+    /* 🎛️ Boutons avatar */
+    .avatar-buttons {
+        display: flex;
+        gap: 12px;
+    }
+
+    .photo-button {
+        padding: 8px 16px;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+
+    .photo-button.primary {
+        background-color: #0066ff;
+        color: white;
+        border: none;
+    }
+
+    .photo-button.primary:hover {
+        background-color: #0052cc;
+        transform: translateY(-1px);
+    }
+
+    .photo-button.secondary {
+        background-color: white;
+        color: #dc3545;
+        border: 1px solid #dc3545;
+    }
+
+    .photo-button.secondary:hover {
+        background-color: #fff5f5;
+        transform: translateY(-1px);
+    }
+
+    /* 📝 Champs d'information */
+    .info-field {
+        margin-bottom: 24px;
+    }
+
+    .info-field:last-child {
+        margin-bottom: 0;
+    }
+
+    .info-field label {
+        display: block;
+        font-size: 14px;
+        color: #666;
+        margin-bottom: 8px;
+    }
+
+    .info-value {
+        font-size: 16px;
+        color: #1a1a1a;
+    }
+
+    /* 📧 Section email */
+    .info-value-with-button {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
     }
 
     .email-edit {
-        flex-direction: column;
-    }
-
-    .email-buttons {
-        margin-top: 8px;
-    }
-
-    .save-btn,
-    .cancel-btn,
-    .modify-button {
+        display: flex;
+        gap: 12px;
         width: 100%;
     }
-}
-/* Ajoutez ces styles dans Settings.css */
 
-/* Styles des onglets */
-.settings-tabs {
-    display: flex;
-    gap: 16px;
-    margin-bottom: 24px;
-    border-bottom: 1px solid #e4e6e9;
-    padding-bottom: 8px;
-}
-
-.tab-button {
-    padding: 8px 16px;
-    border: none;
-    background: none;
-    font-size: 16px;
-    font-weight: 500;
-    color: #666;
-    cursor: pointer;
-    position: relative;
-    transition: all 0.2s ease;
-}
-
-.tab-button:hover {
-    color: #0066ff;
-}
-
-.tab-button.active {
-    color: #0066ff;
-}
-
-.tab-button.active::after {
-    content: '';
-    position: absolute;
-    bottom: -9px;
-    left: 0;
-    width: 100%;
-    height: 3px;
-    background-color: #0066ff;
-    border-radius: 3px;
-}
-
-/* Styles LinkedIn */
-.linkedin-section {
-    margin-top: 24px;
-}
-
-.connection-status {
-    margin-top: 24px;
-    padding: 16px;
-    border-radius: 8px;
-    border: 1px solid #e4e6e9;
-}
-
-.status-badge {
-    margin-left: 8px;
-    padding: 4px 8px;
-    border-radius: 12px;
-    font-size: 14px;
-    font-weight: 500;
-}
-
-.status-badge.connected {
-    background-color: #d4edda;
-    color: #155724;
-}
-
-.status-badge.disconnected {
-    background-color: #f8d7da;
-    color: #721c24;
-}
-
-.test-connection-btn {
-    margin-top: 12px;
-    padding: 8px 16px;
-    background-color: #0066ff;
-    color: white;
-    border: none;
-    border-radius: 8px;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    width: 100%;
-}
-
-.test-connection-btn:hover:not(:disabled) {
-    background-color: #0052cc;
-    transform: translateY(-1px);
-}
-
-.test-connection-btn:disabled {
-    background-color: #ccc;
-    cursor: not-allowed;
-}
-
-.password-edit {
-    display: flex;
-    gap: 12px;
-    width: 100%;
-}
-
-.password-input {
-    flex: 1;
-    padding: 8px 12px;
-    border: 2px solid #e4e6e9;
-    border-radius: 8px;
-    font-size: 14px;
-    transition: border-color 0.2s ease;
-}
-
-.password-input:focus {
-    outline: none;
-    border-color: #0066ff;
-    box-shadow: 0 0 0 3px rgba(0, 102, 255, 0.1);
-}
-
-/* Dark mode */
-@media (prefers-color-scheme: dark) {
-    .settings-tabs {
-        border-bottom-color: #4b5563;
+    .email-input {
+        flex: 1;
+        padding: 8px 12px;
+        border: 2px solid #e4e6e9;
+        border-radius: 8px;
+        font-size: 14px;
+        transition: all 0.2s ease;
     }
 
-    .tab-button {
+    .email-input:focus {
+        outline: none;
+        border-color: #0066ff;
+        box-shadow: 0 0 0 3px rgba(0, 102, 255, 0.1);
+    }
+
+    /* 🌗 Mode sombre */
+    .dark .settings-main {
+        color: #e5e7eb;
+        background-color: #1f2937;
+        border-radius: 15px;
+    }
+
+    .dark .settings-content {
+        background: #2d2d2d;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+    }
+
+    .dark .back-button {
+        background-color: #374151;
         color: #e5e7eb;
     }
 
-    .tab-button:hover,
+    .dark .back-button:hover {
+        background-color: #4b5563;
+    }
+
+    .dark h2,
+    .dark h3 {
+        color: #e5e7eb;
+    }
+
+    .dark .photo-section,
+    .dark .info-section {
+        border-bottom-color: #404040;
+    }
+
+    .dark .info-field label {
+        color: #9ca3af;
+    }
+
+    .dark .info-value {
+        color: #e5e7eb;
+    }
+
+    .dark .profile-avatar {
+        border-color: #404040;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+    }
+
+    .dark .photo-button.secondary {
+        background-color: #2d2d2d;
+        border-color: #dc3545;
+        color: #dc3545;
+    }
+
+    .dark .photo-button.secondary:hover {
+        background-color: #3d3d3d;
+    }
+
+    .dark .email-input {
+        background-color: #374151;
+        color: #e5e7eb;
+        border-color: #4b5563;
+    }
+
+    .dark .email-input:focus {
+        border-color: #0066ff;
+        box-shadow: 0 0 0 3px rgba(0, 102, 255, 0.2);
+    }
+
+    .dark .modify-button {
+        background-color: #0066ff;
+        color: white;
+        border: none;
+        padding: 8px 16px;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+
+    .dark .cancel-btn {
+        background-color: #374151;
+        color: #e5e7eb;
+        border-color: #4b5563;
+    }
+
+    .dark .cancel-btn:hover {
+        background-color: #4b5563;
+    }
+
+    /* Messages et notifications */
+    .message-banner {
+        position: fixed;
+        bottom: 24px;
+        right: 24px;
+        padding: 12px 24px;
+        border-radius: 8px;
+        font-size: 14px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        animation: slideIn 0.3s ease;
+        z-index: 1000;
+    }
+
+    .message-banner.success {
+        background-color: #10b981;
+        color: white;
+    }
+
+    .message-banner.error {
+        background-color: #ef4444;
+        color: white;
+    }
+
+    /* État de chargement */
+    .loading {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 200px;
+        font-size: 16px;
+        color: #666;
+    }
+
+    .dark .loading {
+        color: #9ca3af;
+    }
+
+    /* Animations */
+    @keyframes slideIn {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    /* Responsive Design */
+    @media (max-width: 768px) {
+        .settings-main {
+            padding: 1rem;
+        }
+
+        .settings-content {
+            padding: 16px;
+        }
+
+        .email-edit {
+            flex-direction: column;
+        }
+
+        .email-buttons {
+            margin-top: 8px;
+        }
+
+        .save-btn,
+        .cancel-btn,
+        .modify-button {
+            width: auto;
+        }
+    }
+
+    /* Ajoutez ces styles à votre fichier Settings.css */
+    .loading-spinner {
+        animation: spin 1s linear infinite;
+        display: inline-block;
+    }
+
+    .last-check {
+        font-size: 12px;
+        color: var(--text-secondary);
+        margin-top: 4px;
+    }
+
+    .credentials-warning {
+        color: #ffa500;
+        font-size: 14px;
+        margin-top: 8px;
+    }
+
+    @keyframes spin {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
+    }
+    /* Styles des onglets */
+    .settings-tabs {
+        display: flex;
+        gap: 16px;
+        margin-bottom: 24px;
+        border-bottom: 1px solid #e4e6e9;
+        padding-bottom: 8px;
+    }
+
+    .tab-button {
+        padding: 8px 16px;
+        border: none;
+        background: none;
+        font-size: 16px;
+        font-weight: 500;
+        color: #666;
+        cursor: pointer;
+        position: relative;
+        transition: all 0.2s ease;
+    }
+
+    .tab-button:hover {
+        color: #0066ff;
+    }
+
     .tab-button.active {
-        color: #60a5fa;
+        color: #0066ff;
     }
 
     .tab-button.active::after {
-        background-color: #60a5fa;
+        content: '';
+        position: absolute;
+        bottom: -9px;
+        left: 0;
+        width: 100%;
+        height: 3px;
+        background-color: #0066ff;
+        border-radius: 3px;
+    }
+
+    /* Styles LinkedIn */
+    .linkedin-section {
+        margin-top: 24px;
     }
 
     .connection-status {
-        background-color: #374151;
-        border-color: #4b5563;
+        margin-top: 24px;
+        padding: 16px;
+        border-radius: 8px;
+        border: 1px solid #e4e6e9;
+    }
+
+    .status-badge {
+        margin-left: 8px;
+        padding: 4px 8px;
+        border-radius: 12px;
+        font-size: 14px;
+        font-weight: 500;
     }
 
     .status-badge.connected {
-        background-color: #065f46;
-        color: #d1fae5;
+        background-color: #d4edda;
+        color: #155724;
     }
 
     .status-badge.disconnected {
-        background-color: #991b1b;
-        color: #fecaca;
+        background-color: #f8d7da;
+        color: #721c24;
+    }
+
+    .test-connection-btn {
+        margin-top: 12px;
+        padding: 8px 16px;
+        background-color: #0066ff;
+        color: white;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        width: 100%;
+    }
+
+    .test-connection-btn:hover:not(:disabled) {
+        background-color: #0052cc;
+        transform: translateY(-1px);
+    }
+
+    .test-connection-btn:disabled {
+        background-color: #ccc;
+        cursor: not-allowed;
+    }
+
+    .password-edit {
+        display: flex;
+        gap: 12px;
+        width: 100%;
     }
 
     .password-input {
-        background-color: #374151;
-        border-color: #4b5563;
-        color: #e5e7eb;
-    }
-}
-
-/* Responsive Design */
-@media (max-width: 768px) {
-    .settings-tabs {
-        flex-direction: column;
-        gap: 8px;
+        flex: 1;
+        padding: 8px 12px;
+        border: 2px solid #e4e6e9;
+        border-radius: 8px;
+        font-size: 14px;
+        transition: border-color 0.2s ease;
     }
 
-    .tab-button {
-        width: 100%;
-        text-align: left;
-        padding: 12px;
+    .password-input:focus {
+        outline: none;
+        border-color: #0066ff;
+        box-shadow: 0 0 0 3px rgba(0, 102, 255, 0.1);
     }
 
-    .tab-button.active::after {
-        bottom: 0;
-        width: 3px;
-        height: 100%;
-        left: 0;
+    /* Dark mode */
+    @media (prefers-color-scheme: dark) {
+        .settings-tabs {
+            border-bottom-color: #4b5563;
+        }
+
+        .tab-button {
+            color: #e5e7eb;
+        }
+
+        .tab-button:hover,
+        .tab-button.active {
+            color: #60a5fa;
+        }
+
+        .tab-button.active::after {
+            background-color: #60a5fa;
+        }
+
+        .connection-status {
+        }
+
+        .status-badge.connected {
+            background-color: #065f46;
+            color: #d1fae5;
+        }
+
+        .status-badge.disconnected {
+            background-color: #991b1b;
+            color: #fecaca;
+        }
+
+        .password-input {
+            background-color: #374151;
+            border-color: #4b5563;
+            color: #e5e7eb;
+        }
     }
 
-    .password-edit,
-    .email-edit {
-        flex-direction: column;
+    /* Responsive Design */
+    @media (max-width: 768px) {
+        .settings-tabs {
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .tab-button {
+            width: 100%;
+            text-align: left;
+            padding: 12px;
+        }
+
+        .tab-button.active::after {
+            bottom: 0;
+            width: 3px;
+            height: 100%;
+            left: 0;
+        }
+
+        .password-edit,
+        .email-edit {
+            flex-direction: column;
+        }
+
+        .password-buttons,
+        .email-buttons {
+            margin-top: 8px;
+            display: flex;
+            gap: 8px;
+        }
     }
-
-    .password-buttons,
-    .email-buttons {
-        margin-top: 8px;
-        display: flex;
-        gap: 8px;
-    }
-}
-.info-notification {
-    margin-top: 20px;
-    padding: 16px;
-    background-color: #e8f4fd;
-    border-radius: 8px;
-    border: 1px solid #b3e0ff;
-}
-
-.info-text {
-    color: #0066cc;
-    font-size: 14px;
-    line-height: 1.5;
-    margin: 0;
-}
-
-/* Dark mode pour la notification */
-@media (prefers-color-scheme: dark) {
     .info-notification {
-        background-color: #1e3a5f;
-        border-color: #234876;
+        margin-top: 20px;
+        padding: 16px;
+        background-color: #e8f4fd;
+        border-radius: 8px;
+        border: 1px solid #b3e0ff;
     }
 
     .info-text {
-        color: #66b2ff;
+        color: #0066cc;
+        font-size: 14px;
+        line-height: 1.5;
+        margin: 0;
     }
-}
+
+    .save-btn {
+        width: auto;
+        padding: 10px;
+        background-color: #333;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        font-size: 16px;
+        cursor: pointer;
+        transition: background-color 0.3s ease, transform 0.2s ease;
+    }
+    .dark .info-notification {
+        background-color: #1e3a5f;
+        border-color: #234876;
+    }
+    /* Dark mode pour la notification */
+    @media (prefers-color-scheme: dark) {
+
+
+        .info-text {
+            color: #66b2ff;
+        }
+    }
+
+
+    .connection-success {
+        margin-top: 12px;
+        color: #155724;
+        background-color: #d4edda;
+        padding: 8px 12px;
+        border-radius: 6px;
+        font-size: 14px;
+    }
+
+    .status-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 16px;
+    }
+    /* Variables globales */
+    :root {
+        /* Couleurs claires */
+        --primary-light: #0066ff;
+        --background-light: #ffffff;
+        --text-light: #1a1a1a;
+        --border-light: #e4e6e9;
+        --success-light: #10b981;
+        --error-light: #ef4444;
+        --warning-light: #ffa500;
+
+        /* Couleurs sombres */
+        --primary-dark: #60a5fa;
+        --background-dark: #1a1a1a;
+        --text-dark: #e5e7eb;
+        --border-dark: #404040;
+        --success-dark: #065f46;
+        --error-dark: #991b1b;
+        --warning-dark: #f59e0b;
+
+        /* Transitions */
+        --transition-fast: 0.2s ease;
+        --transition-normal: 0.3s ease;
+        --border-radius: 12px;
+    }
+
+    /* Style des paramètres LinkedIn amélioré */
+    .linkedin-section {
+        padding: 24px;
+        border-radius: var(--border-radius);
+        background: var(--background-light);
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+    }
+
+    .dark .linkedin-section {
+        background: var(--background-dark);
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+    }
+
+    /* Status de connexion amélioré */
+    .connection-status {
+        border-radius: var(--border-radius);
+        padding: 20px;
+        border: 2px solid var(--border-light);
+        background: rgba(255, 255, 255, 0.05);
+        backdrop-filter: blur(10px);
+    }
+
+    .dark .connection-status {
+        border-color: var(--border-dark);
+        background: rgba(0, 0, 0, 0.2);
+    }
+
+    /* Badge de statut amélioré */
+    .status-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 6px 12px;
+        border-radius: 20px;
+        font-weight: 600;
+        transition: var(--transition-fast);
+    }
+
+    .status-badge.connected {
+        background: var(--success-light);
+        color: white;
+    }
+
+    .status-badge.disconnected {
+        background: var(--error-light);
+        color: white;
+    }
+
+    .dark .status-badge.connected {
+        background: var(--success-dark);
+    }
+
+    .dark .status-badge.disconnected {
+        background: var(--error-dark);
+    }
+
+    /* Bouton de test amélioré */
+    .test-connection-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        width: 100%;
+        padding: 12px;
+        border-radius: 10px;
+        font-weight: 600;
+        background: var(--primary-light);
+        color: white;
+        border: none;
+        transition: var(--transition-normal);
+    }
+
+    .test-connection-btn:not(:disabled):hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 102, 255, 0.2);
+    }
+
+    .dark .test-connection-btn {
+        background: var(--primary-dark);
+    }
+
+    .test-connection-btn:disabled {
+        background: var(--border-light);
+        cursor: not-allowed;
+    }
+
+    .dark .test-connection-btn:disabled {
+        background: var(--border-dark);
+    }
+
+    /* Messages d'avertissement et de succès */
+    .credentials-warning {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-top: 16px;
+        padding: 12px;
+        border-radius: 8px;
+        background: rgba(255, 165, 0, 0.1);
+        color: var(--warning-light);
+        font-size: 14px;
+    }
+
+    .connection-success {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-top: 16px;
+        padding: 12px;
+        border-radius: 8px;
+        background: rgba(16, 185, 129, 0.1);
+        color: var(--success-light);
+        font-size: 14px;
+    }
+
+    .dark .credentials-warning {
+        background: rgba(245, 158, 11, 0.1);
+        color: var(--warning-dark);
+    }
+
+    .dark .connection-success {
+        background: rgba(6, 95, 70, 0.1);
+        color: var(--success-dark);
+    }
+
+    /* Animation du spinner */
+    @keyframes spin {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
+    }
+
+    .loading-spinner {
+        display: inline-block;
+        animation: spin 1s linear infinite;
+        opacity: 0.8;
+    }
+
+    /* Notification info améliorée */
+    .info-notification {
+        margin-top: 24px;
+        padding: 16px;
+        border-radius: var(--border-radius);
+        background: linear-gradient(145deg, rgba(0, 102, 255, 0.05), rgba(0, 102, 255, 0.1));
+        border: 1px solid rgba(0, 102, 255, 0.2);
+        backdrop-filter: blur(4px);
+    }
+
+    .dark .info-notification {
+        background: linear-gradient(145deg, rgba(96, 165, 250, 0.05), rgba(96, 165, 250, 0.1));
+        border-color: rgba(96, 165, 250, 0.2);
+    }
+
+    /* Inputs améliorés */
+    .email-input, .password-input {
+        width: 100%;
+        padding: 12px;
+        border-radius: 8px;
+        border: 2px solid var(--border-light);
+        background: var(--background-light);
+        color: var(--text-light);
+        font-size: 14px;
+        transition: var(--transition-fast);
+    }
+
+    .dark .email-input, .dark .password-input {
+        background: var(--background-dark);
+        border-color: var(--border-dark);
+        color: var(--text-dark);
+    }
+
+    .email-input:focus, .password-input:focus {
+        border-color: var(--primary-light);
+        box-shadow: 0 0 0 3px rgba(0, 102, 255, 0.1);
+        outline: none;
+    }
+
+    .dark .email-input:focus, .dark .password-input:focus {
+        border-color: var(--primary-dark);
+        box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.1);
+    }

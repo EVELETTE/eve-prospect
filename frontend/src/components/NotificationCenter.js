@@ -1,16 +1,22 @@
 import React, { useState, useEffect, useRef } from 'react';
+import {
+    Bell,
+    Check,
+    Trash2,
+    X,
+    Loader,
+    BellOff,
+    AlertCircle
+} from 'lucide-react';
 import axios from 'axios';
-import { Bell, Check, Trash2 } from 'lucide-react';
-import './NotificationCenter.css';
 
-const NotificationCenter = ({ theme }) => {
+const NotificationCenter = () => {
     const [notifications, setNotifications] = useState([]);
     const [unreadCount, setUnreadCount] = useState(0);
     const [isOpen, setIsOpen] = useState(false);
-    const dropdownRef = useRef(null);
     const [loading, setLoading] = useState(false);
+    const dropdownRef = useRef(null);
 
-    // Fonction pour récupérer les notifications
     const fetchNotifications = async () => {
         try {
             setLoading(true);
@@ -24,13 +30,12 @@ const NotificationCenter = ({ theme }) => {
                 setUnreadCount(response.data.unreadCount);
             }
         } catch (error) {
-            console.error('Erreur lors de la récupération des notifications:', error);
+            console.error('Erreur notifications:', error);
         } finally {
             setLoading(false);
         }
     };
 
-    // Effet pour fermer le menu lors d'un clic à l'extérieur
     useEffect(() => {
         const handleClickOutside = (event) => {
             if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
@@ -42,14 +47,12 @@ const NotificationCenter = ({ theme }) => {
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
 
-    // Récupérer les notifications au chargement
     useEffect(() => {
         fetchNotifications();
         const interval = setInterval(fetchNotifications, 5000);
         return () => clearInterval(interval);
     }, []);
 
-    // Marquer une notification comme lue
     const markAsRead = async (id) => {
         try {
             const token = localStorage.getItem('token');
@@ -58,11 +61,10 @@ const NotificationCenter = ({ theme }) => {
             });
             fetchNotifications();
         } catch (error) {
-            console.error('Erreur lors du marquage de la notification:', error);
+            console.error('Erreur marquage lu:', error);
         }
     };
 
-    // Marquer toutes les notifications comme lues
     const markAllAsRead = async () => {
         try {
             const token = localStorage.getItem('token');
@@ -71,11 +73,10 @@ const NotificationCenter = ({ theme }) => {
             });
             fetchNotifications();
         } catch (error) {
-            console.error('Erreur lors du marquage des notifications:', error);
+            console.error('Erreur marquage tout lu:', error);
         }
     };
 
-    // Supprimer une notification
     const deleteNotification = async (id) => {
         try {
             const token = localStorage.getItem('token');
@@ -84,11 +85,10 @@ const NotificationCenter = ({ theme }) => {
             });
             fetchNotifications();
         } catch (error) {
-            console.error('Erreur lors de la suppression de la notification:', error);
+            console.error('Erreur suppression:', error);
         }
     };
 
-    // Formater la date pour l'affichage
     const formatDate = (dateString) => {
         const date = new Date(dateString);
         return date.toLocaleString('fr-FR', {
@@ -101,88 +101,115 @@ const NotificationCenter = ({ theme }) => {
     };
 
     return (
-        <div className={`notifications-wrapper ${theme}`} ref={dropdownRef}>
+        <div className="relative" ref={dropdownRef}>
+            {/* Bouton de notification */}
             <button
-                className={`notification-button ${theme}`}
                 onClick={() => setIsOpen(!isOpen)}
+                className="relative p-2 rounded-full hover:bg-gray-700 transition-colors duration-200"
                 aria-label="Notifications"
             >
-                <Bell className="notification-icon" />
+                <Bell className="w-6 h-6 text-gray-300" />
                 {unreadCount > 0 && (
-                    <div className="notification-badge">
+                    <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold
+                                   w-5 h-5 flex items-center justify-center rounded-full">
                         {unreadCount}
-                    </div>
+                    </span>
                 )}
             </button>
 
+            {/* Panneau des notifications */}
             {isOpen && (
-                <div className={`notifications-container ${theme}`}>
-                    <div className="notifications-header">
-                        <div className="notifications-title">Notifications</div>
-                        {unreadCount > 0 && (
+                <div className="absolute right-0 mt-2 w-96 bg-gray-800 rounded-lg shadow-lg
+                               border border-gray-700 overflow-hidden z-50">
+                    {/* Header */}
+                    <div className="flex items-center justify-between p-4 border-b border-gray-700">
+                        <h2 className="text-lg font-semibold text-white">Notifications</h2>
+                        <div className="flex items-center gap-2">
+                            {unreadCount > 0 && (
+                                <button
+                                    onClick={markAllAsRead}
+                                    className="text-sm text-blue-400 hover:text-blue-300 transition-colors"
+                                >
+                                    Tout marquer comme lu
+                                </button>
+                            )}
                             <button
-                                className="mark-all-read"
-                                onClick={markAllAsRead}
+                                onClick={() => setIsOpen(false)}
+                                className="text-gray-400 hover:text-white transition-colors"
                             >
-                                Tout marquer comme lu
+                                <X className="w-5 h-5" />
                             </button>
-                        )}
+                        </div>
                     </div>
 
-                    {loading ? (
-                        <div className="notifications-empty">
-                            Chargement...
-                        </div>
-                    ) : notifications.length === 0 ? (
-                        <div className="notifications-empty">
-                            Aucune notification
-                        </div>
-                    ) : (
-                        <div className="notifications-list">
-                            {notifications.map(notification => (
-                                <div
-                                    key={notification._id}
-                                    className={`notification-item ${!notification.read ? 'unread' : ''} ${theme}`}
-                                >
-                                    <div className="notification-content">
-                                        <div className="notification-title">
-                                            {notification.title}
+                    {/* Contenu */}
+                    <div className="max-h-[70vh] overflow-y-auto">
+                        {loading ? (
+                            <div className="flex items-center justify-center p-8">
+                                <Loader className="w-6 h-6 text-blue-400 animate-spin" />
+                            </div>
+                        ) : notifications.length === 0 ? (
+                            <div className="flex flex-col items-center justify-center p-8 text-gray-400">
+                                <BellOff className="w-12 h-12 mb-2" />
+                                <p>Aucune notification</p>
+                            </div>
+                        ) : (
+                            <div className="divide-y divide-gray-700">
+                                {notifications.map(notification => (
+                                    <div
+                                        key={notification._id}
+                                        className={`group p-4 hover:bg-gray-700/50 transition-colors
+                                                  ${!notification.read ? 'bg-gray-700/30' : ''}`}
+                                    >
+                                        <div className="flex items-start justify-between">
+                                            <div className="flex-1">
+                                                <h3 className={`font-medium ${!notification.read ? 'text-white' : 'text-gray-300'}`}>
+                                                    {notification.title}
+                                                </h3>
+                                                <p className="mt-1 text-sm text-gray-400">
+                                                    {notification.message}
+                                                </p>
+                                                <time className="mt-2 text-xs text-gray-500">
+                                                    {formatDate(notification.createdAt)}
+                                                </time>
+                                            </div>
+
+                                            <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                {!notification.read && (
+                                                    <button
+                                                        onClick={() => markAsRead(notification._id)}
+                                                        className="p-1 rounded-full hover:bg-gray-600 text-gray-400
+                                                                 hover:text-green-400 transition-colors"
+                                                        title="Marquer comme lu"
+                                                    >
+                                                        <Check className="w-4 h-4" />
+                                                    </button>
+                                                )}
+                                                <button
+                                                    onClick={() => deleteNotification(notification._id)}
+                                                    className="p-1 rounded-full hover:bg-gray-600 text-gray-400
+                                                             hover:text-red-400 transition-colors"
+                                                    title="Supprimer"
+                                                >
+                                                    <Trash2 className="w-4 h-4" />
+                                                </button>
+                                            </div>
                                         </div>
-                                        <div className="notification-message">
-                                            {notification.message}
-                                        </div>
-                                        <div className="notification-time">
-                                            {formatDate(notification.createdAt)}
-                                        </div>
-                                    </div>
-                                    <div className="notification-actions">
-                                        {!notification.read && (
-                                            <button
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    markAsRead(notification._id);
-                                                }}
-                                                className="notification-action-btn"
-                                                title="Marquer comme lu"
+
+                                        {notification.link && (
+                                            <a
+                                                href={notification.link}
+                                                className="mt-2 inline-flex items-center text-sm text-blue-400
+                                                         hover:text-blue-300 transition-colors"
                                             >
-                                                <Check size={16} />
-                                            </button>
+                                                En savoir plus →
+                                            </a>
                                         )}
-                                        <button
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                deleteNotification(notification._id);
-                                            }}
-                                            className="notification-action-btn"
-                                            title="Supprimer"
-                                        >
-                                            <Trash2 size={16} />
-                                        </button>
                                     </div>
-                                </div>
-                            ))}
-                        </div>
-                    )}
+                                ))}
+                            </div>
+                        )}
+                    </div>
                 </div>
             )}
         </div>

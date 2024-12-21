@@ -26,19 +26,20 @@
 }
 
 .dark {
-    --bg-primary: #111827;
-    --bg-secondary: #1f2937;
-    --text-primary: #f3f4f6;
-    --text-secondary: #9ca3af;
-    --border-color: #374151;
-    --card-bg: #1f2937;
-    --card-header-bg: #111827;
+    --background: #1a1a1a;
+    --card-bg: #262626;
+    --border: #404040;
+    --text-primary: #E5E7EB;
+    --text-secondary: #9CA3AF;
+    --grid: #333333;
+    --shadow: rgba(0, 0, 0, 0.3);
 }
 
 .automation-container {
     padding: 1.5rem;
     background-color: var(--bg-primary);
     transition: var(--transition);
+    border-radius: 15px;
 }
 
 /* Header */
