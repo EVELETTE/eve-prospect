@@ -1,268 +1,123 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
+import DashboardStats from './DashboardStats';
 import axios from 'axios';
-import './Dashboard.css';
-import Settings from './Settings'
-import LogoLight from '../assets/logo-light.png';
-import LogoDark from '../assets/logo-dark.png';
-import StatCard from './StatCard';
-import ProspectListWidget from './ProspectListWidget';
-import NotificationCenter from './NotificationCenter';
-import {
-    Chart as ChartJS,
-    LineElement,
-    PointElement,
-    LineController,
-    CategoryScale,
-    LinearScale,
-    Title,
-    Tooltip,
-    Legend
-} from 'chart.js';
-import { Line } from 'react-chartjs-2';
+import { Loader2, AlertCircle, RefreshCw } from 'lucide-react';
 
-ChartJS.register(LineElement, PointElement, LineController, CategoryScale, LinearScale, Title, Tooltip, Legend);
-
-const Dashboard = () => {
-    // États
-    const [userData, setUserData] = useState({
-        firstName: '',
-        lastName: '',
-        email: '',
-        avatar: ''
-    });
+const Dashboard = ({ showNotification }) => {
     const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
-    const [showMenu, setShowMenu] = useState(false);
-    const [showSettings, setShowSettings] = useState(false);
-    const [isDarkTheme, setIsDarkTheme] = useState(true);
-    const [selectedStat, setSelectedStat] = useState("Prospects ajoutés");
     const [prospects, setProspects] = useState([]);
-    const [showProspects, setShowProspects] = useState(true);
-    const [showStats, setShowStats] = useState(true);
-    const menuRef = useRef(null);
+    const [error, setError] = useState(null);
 
-    // Chargement initial des données
-    useEffect(() => {
-        fetchUserData();
-        fetchProspects();
-    }, []);
-
-    // Gestion du clic en dehors du menu
-    useEffect(() => {
-        const handleClickOutside = (event) => {
-            if (menuRef.current && !menuRef.current.contains(event.target)) {
-                setShowMenu(false);
-            }
-        };
-
-        document.addEventListener('mousedown', handleClickOutside);
-        return () => document.removeEventListener('mousedown', handleClickOutside);
-    }, []);
-
-    // Récupération des données utilisateur
-    const fetchUserData = async () => {
-        try {
-            const token = localStorage.getItem('token');
-            if (!token) {
-                console.log('❌ Aucun token trouvé');
-                window.location.href = '/login';
-                return;
-            }
-
-            const response = await axios.get('http://localhost:5001/api/auth/user', {
-                headers: {
-                    Authorization: `Bearer ${token}`
-                }
-            });
-
-            if (response.data) {
-                const userData = {
-                    firstName: response.data.firstName || '',
-                    lastName: response.data.lastName || '',
-                    email: response.data.email || '',
-                    avatar: response.data.avatar
-                };
-                setUserData(userData);
-            }
-        } catch (error) {
-            console.error('❌ Erreur lors de la récupération des données:', error);
-            if (error.response?.status === 401) {
-                localStorage.removeItem('token');
-                window.location.href = '/login';
-            }
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    // Récupération des prospects
+    // Fonction pour récupérer les prospects
     const fetchProspects = async () => {
         try {
+            setLoading(true);
             const response = await axios.get('http://localhost:5001/api/prospects', {
-                headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                }
             });
 
             if (response.data.success) {
                 setProspects(response.data.prospects);
             }
         } catch (error) {
-            console.error("❌ Erreur chargement prospects:", error);
+            console.error("Erreur chargement prospects:", error);
+            setError("Erreur lors du chargement des données");
+            showNotification?.('Erreur lors du chargement des données', 'error');
         } finally {
             setLoading(false);
         }
     };
 
-    // Handlers
-    const toggleMenu = () => setShowMenu(!showMenu);
-    const handleShowSettings = () => {
-        setShowSettings(true);
-        setShowMenu(false);
-    };
-    const handleLogout = () => {
-        localStorage.removeItem('token');
-        window.location.href = '/login';
-    };
-    const handleRefreshData = async () => {
-        setLoading(true);
-        await Promise.all([fetchUserData(), fetchProspects()]);
-        setLoading(false);
-    };
+    // Effet pour charger les données au montage
+    useEffect(() => {
+        fetchProspects();
 
-    // Configuration du graphique
-    const chartData = {
-        labels: ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"],
-        datasets: [{
-            label: selectedStat,
-            data: prospects.length ? Array(7).fill(prospects.length) : Array(7).fill(0),
-            borderColor: '#0077B5',
-            backgroundColor: 'rgba(0, 119, 181, 0.1)',
-            fill: true,
-            tension: 0.4
-        }]
-    };
+        // Rafraîchir les données toutes les 5 minutes
+        const interval = setInterval(() => {
+            fetchProspects();
+        }, 300000);
 
-    if (loading) return <div className="loading">🔄 Chargement...</div>;
-    if (error) return <div className="error">❌ {error}</div>;
+        return () => clearInterval(interval);
+    }, []);
 
-    return (
-        <div className={`dashboard-container ${isDarkTheme ? 'dark' : ''}`}>
-            <header className="dashboard-header">
-                <img src={isDarkTheme ? LogoDark : LogoLight} alt="Logo" className="dashboard-logo" />
-                <div className="header-actions">
-                    <button className="start-campaign-btn">
-                        Démarrer une campagne
-                    </button>
-                    {/* Remplacement de l'ancien composant de notification par le nouveau NotificationCenter */}
-                    <NotificationCenter />
-                    <div className="user-profile" onClick={toggleMenu} ref={menuRef}>
-                        <img
-                            src={userData.avatar}
-                            alt="Avatar"
-                            className="header-user-avatar"
-                            onError={(e) => {
-                                e.target.src = `https://ui-avatars.com/api/?name=${userData.firstName}+${userData.lastName}&background=random`;
-                            }}
-                        />
-                        <span className="user-name">
-                            {userData.firstName} {userData.lastName}
-                        </span>
-                        <span className="dropdown-icon">▼</span>
-                        {showMenu && (
-                            <div className="dropdown-menu">
-                                <button className="menu-item" onClick={handleShowSettings}>
-                                    ⚙️ Paramètres
-                                </button>
-                                <button className="menu-item" onClick={handleRefreshData}>
-                                    🔄 Rafraîchir
-                                </button>
-                                <button
-                                    className="menu-item theme-toggle"
-                                    onClick={() => setIsDarkTheme(!isDarkTheme)}
-                                >
-                                    {isDarkTheme ? '☀️ Mode clair' : '🌙 Mode sombre'}
-                                </button>
-                                <button className="menu-item logout" onClick={handleLogout}>
-                                    🚪 Déconnexion
-                                </button>
-                            </div>
-                        )}
+    // Affichage du chargement
+    if (loading) {
+        return (
+            <div className="flex items-center justify-center h-64">
+                <div className="flex flex-col items-center space-y-4">
+                    <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
+                    <p className="text-gray-600 dark:text-gray-400">
+                        Chargement du tableau de bord...
+                    </p>
+                </div>
+            </div>
+        );
+    }
+
+    // Affichage de l'erreur
+    if (error) {
+        return (
+            <div className="p-6">
+                <div className="max-w-7xl mx-auto">
+                    <div className="bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 p-4 rounded-lg flex items-center space-x-2">
+                        <AlertCircle className="w-5 h-5" />
+                        <span>{error}</span>
                     </div>
                 </div>
-            </header>
+            </div>
+        );
+    }
 
-            <div className="dashboard-content">
-                {showSettings ? (
-                    <Settings onBack={() => setShowSettings(false)} userData={userData} />
-                ) : (
-                    <>
-                        {showProspects && (
-                            <section className="prospects-section" key="prospects">
-                                <h3>👥 Gestion des Prospects</h3>
-                                <ProspectListWidget
-                                    prospects={prospects}
-                                    onProspectsUpdate={setProspects}
-                                    onRefresh={handleRefreshData}
-                                />
-                            </section>
-                        )}
+    return (
+        <div className="p-6">
+            <div className="max-w-7xl mx-auto">
+                <div className="flex justify-between items-center mb-6">
+                    <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+                        Tableau de bord
+                    </h1>
 
-                        {showStats && (
-                            <section className="statistics" key="stats">
-                                <h3>📊 Statistiques</h3>
-                                <div className="stat-box">
-                                    <StatCard
-                                        icon="👥"
-                                        value={prospects.length}
-                                        label="Prospects ajoutés"
-                                        color="#0077B5"
-                                    />
-                                    <StatCard
-                                        icon="📨"
-                                        value={Math.round(prospects.length * 1.5)}
-                                        label="Invitations envoyées"
-                                        color="#00A0DC"
-                                    />
-                                    <StatCard
-                                        icon="✉️"
-                                        value={Math.round(prospects.length * 0.8)}
-                                        label="Messages envoyés"
-                                        color="#0066FF"
-                                    />
-                                    <StatCard
-                                        icon="🤝"
-                                        value={Math.round(prospects.length * 0.6)}
-                                        label="Connexions réalisées"
-                                        color="#0A66C2"
-                                    />
-                                </div>
+                    {/* Bouton de rafraîchissement */}
+                    <button
+                        onClick={() => fetchProspects()}
+                        className="flex items-center px-4 py-2 space-x-2 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors"
+                    >
+                        <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+                        <span>Rafraîchir</span>
+                    </button>
+                </div>
 
-                                <div className="stat-chart">
-                                    <Line data={chartData} />
-                                </div>
-                            </section>
-                        )}
+                {/* Statistiques */}
+                <DashboardStats
+                    prospects={prospects}
+                    className="animate-fade-in"
+                />
 
-                        <div className="sections-control">
-                            <div className="control-buttons">
-                                <button
-                                    className={`section-toggle ${showProspects ? 'active' : ''}`}
-                                    onClick={() => setShowProspects(!showProspects)}
-                                >
-                                    {showProspects ? '➖' : '➕'} Prospects
-                                </button>
-                                <button
-                                    className={`section-toggle ${showStats ? 'active' : ''}`}
-                                    onClick={() => setShowStats(!showStats)}
-                                >
-                                    {showStats ? '➖' : '➕'} Statistiques
-                                </button>
-                            </div>
-                        </div>
-                    </>
-                )}
+                {/* Dernière mise à jour */}
+                <div className="mt-4 text-sm text-gray-500 dark:text-gray-400 text-right">
+                    Dernière mise à jour: {new Date().toLocaleTimeString()}
+                </div>
             </div>
         </div>
     );
 };
+
+// Ajouter les animations nécessaires
+const styles = `
+    @keyframes fade-in {
+        from { opacity: 0; }
+        to { opacity: 1; }
+    }
+
+    .animate-fade-in {
+        animation: fade-in 0.3s ease-in-out;
+    }
+`;
+
+// Ajouter les styles à la page
+const styleSheet = document.createElement("style");
+styleSheet.innerText = styles;
+document.head.appendChild(styleSheet);
 
 export default Dashboard;

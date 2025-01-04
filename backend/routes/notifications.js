@@ -4,6 +4,36 @@ const router = express.Router();
 const Notification = require('../models/Notification');
 const authenticate = require('../middleware/authenticate');
 
+
+router.post('/', authenticate, async (req, res) => {
+    try {
+        const { title, message, type, link } = req.body;
+
+        const notification = new Notification({
+            userId: req.userId, // Utilisé depuis le middleware authenticate
+            title,
+            message,
+            type,
+            link,
+            read: false
+        });
+
+        await notification.save();
+
+        res.json({
+            success: true,
+            message: 'Notification créée avec succès',
+            notification
+        });
+    } catch (error) {
+        console.error('Erreur lors de la création de la notification:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Erreur lors de la création de la notification'
+        });
+    }
+});
+
 // Récupérer toutes les notifications de l'utilisateur
 router.get('/', authenticate, async (req, res) => {
     try {

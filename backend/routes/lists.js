@@ -3,6 +3,7 @@ const express = require('express');
 const router = express.Router();
 const List = require('../models/List');
 const authenticate = require('../middleware/authenticate');
+const Prospect = require('../models/Prospect');
 
 // Créer une nouvelle liste
 router.post('/', authenticate, async (req, res) => {
@@ -82,7 +83,8 @@ router.get('/:id', authenticate, async (req, res) => {
             userId: req.userId
         }).populate({
             path: 'prospects',
-            select: 'prenom nom email societe linkedin'
+            select: 'firstName lastName email company profileLink'
+            // Supprimez toute limitation ici si elle existe
         });
 
         if (!list) {
@@ -92,13 +94,23 @@ router.get('/:id', authenticate, async (req, res) => {
             });
         }
 
+        // Formater les prospects pour la réponse
+        const formattedProspects = list.prospects.map(prospect => ({
+            _id: prospect._id,
+            nom: prospect.lastName,
+            prenom: prospect.firstName,
+            email: prospect.email,
+            societe: prospect.company,
+            linkedin: prospect.profileLink
+        }));
+
         res.json({
             success: true,
             list: {
                 _id: list._id,
                 name: list.name,
-                prospects: list.prospects,
-                prospectsCount: list.prospects.length,
+                prospects: formattedProspects,
+                prospectsCount: formattedProspects.length,
                 updatedAt: list.updatedAt
             }
         });
@@ -195,16 +207,10 @@ router.delete('/:id', authenticate, async (req, res) => {
 router.post('/:id/prospects', authenticate, async (req, res) => {
     try {
         const { prospectIds } = req.body;
+        const listId = req.params.id;
 
-        const list = await List.findOneAndUpdate(
-            { _id: req.params.id, userId: req.userId },
-            {
-                $addToSet: { prospects: { $each: prospectIds } },
-                updatedAt: Date.now()
-            },
-            { new: true }
-        ).populate('prospects');
-
+        // Vérifier si la liste existe
+        const list = await List.findOne({ _id: listId, userId: req.userId });
         if (!list) {
             return res.status(404).json({
                 success: false,
@@ -212,16 +218,49 @@ router.post('/:id/prospects', authenticate, async (req, res) => {
             });
         }
 
+        // Mettre à jour la liste avec les nouveaux prospects
+        const updatedList = await List.findOneAndUpdate(
+            { _id: listId, userId: req.userId },
+            {
+                $addToSet: { prospects: { $each: prospectIds } },
+                updatedAt: Date.now()
+            },
+            { new: true }
+        ).populate({
+            path: 'prospects',
+            select: 'firstName lastName email company profileLink'
+        });
+
+        // Mettre à jour les références des listes dans les prospects
+        await Prospect.updateMany(
+            { _id: { $in: prospectIds }, userId: req.userId },
+            {
+                $addToSet: { lists: listId }
+            }
+        );
+
+        // Formater les prospects pour la réponse
+        const formattedProspects = updatedList.prospects.map(prospect => ({
+            _id: prospect._id,
+            nom: prospect.lastName,
+            prenom: prospect.firstName,
+            email: prospect.email,
+            societe: prospect.company,
+            linkedin: prospect.profileLink
+        }));
+
         res.json({
             success: true,
             message: 'Prospects ajoutés avec succès',
             list: {
-                _id: list._id,
-                name: list.name,
-                prospects: list.prospects,
-                updatedAt: list.updatedAt
+                _id: updatedList._id,
+                name: updatedList.name,
+                prospects: formattedProspects,
+                prospectsCount: formattedProspects.length,
+                updatedAt: updatedList.updatedAt
             }
         });
+
     } catch (error) {
         console.error('Erreur lors de l\'ajout des prospects:', error);
         res.status(500).json({

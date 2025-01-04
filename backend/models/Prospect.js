@@ -1,7 +1,7 @@
-// models/Prospect.js
 const mongoose = require('mongoose');
 
 const prospectSchema = new mongoose.Schema({
+    // Informations de base (existantes)
     firstName: {
         type: String,
         required: [true, 'Le prénom est requis'],
@@ -15,16 +15,73 @@ const prospectSchema = new mongoose.Schema({
     profileLink: {
         type: String,
         required: [true, 'Le lien du profil est requis'],
-        unique: true
+        unique: true,
+        index: true
     },
-    email: String,
-    company: String,
-    location: String,
+    email: {
+        type: String,
+        default: 'Non disponible',
+        trim: true
+    },
+    company: {
+        type: String,
+        default: 'Non disponible',
+        trim: true
+    },
+    location: {
+        type: String,
+        default: 'Non disponible',
+        trim: true
+    },
+
+    // Nouvelles informations
+    position: {
+        type: String,
+        default: 'Non disponible',
+        trim: true
+    },
+    description: {
+        type: String,
+        default: 'Non disponible',
+        trim: true
+    },
+
+    // Métadonnées
+    status: {
+        type: String,
+        enum: ['nouveau', 'contacté', 'intéressé', 'converti', 'refusé'],
+        default: 'nouveau'
+    },
+    source: {
+        type: String,
+        enum: ['recherche', 'profil', 'suggestion'],
+        default: 'profil'
+    },
+    extractedAt: {
+        type: Date,
+        default: Date.now
+    },
+    lastContactedAt: Date,
+
+    // Relations (existantes + nouvelles)
+    lists: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'List'
+    }],
+
     userId: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User',
-        required: true
+        required: true,
+        index: true
     }
-}, { timestamps: true });
+}, {
+    timestamps: true,
+    toJSON: { getters: true }
+});
+
+
+// Index composé pour l'unicité par utilisateur
+prospectSchema.index({ profileLink: 1, userId: 1 }, { unique: true });
 
 module.exports = mongoose.model('Prospect', prospectSchema);
